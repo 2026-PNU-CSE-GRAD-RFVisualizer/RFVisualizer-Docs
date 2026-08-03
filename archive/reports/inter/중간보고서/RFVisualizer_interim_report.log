@@ -1,0 +1,1064 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 23.10) (preloaded format=pdflatex 2026.7.16)  16 JUL 2026 10:56
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**./RFVisualizer_interim_report.tex
+(RFVisualizer_interim_report.tex
+LaTeX2e <2026-06-01>
+L3 programming layer <2026-06-18>
+(pnureport.cls
+Document Class: pnureport 2025/05/15 PNU Report class for pdfLaTeX
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/base/report.cls
+Document Class: report 2025/01/22 v1.4n Standard LaTeX document class
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/base/size11.clo
+File: size11.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count276
+\c@chapter=\count277
+\c@section=\count278
+\c@subsection=\count279
+\c@subsubsection=\count280
+\c@paragraph=\count281
+\c@subparagraph=\count282
+\c@figure=\count283
+\c@table=\count284
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen150
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/cjk-ko/kotex.sty
+Package: kotex 2015/04/19 v1.6 Korean TeX (ko.TeX)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/kotex-utf/kotex.cfg)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/kotex-utf/kotexutf.sty
+Package: kotexutf 2022/06/22 v3.0.0 typesetting UTF-8 Korean documents
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/base/inputenc.sty
+Package: inputenc 2024/02/08 v1.3d Input encoding file
+\inpenc@prehook=\toks17
+\inpenc@posthook=\toks18
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/plain/kotex-plain/kotexutf-core.tex
+\unih@ngulpoint=\count285
+\dhucs@emph@raise=\dimen151
+)
+Now handling font encoding LUC ...
+... processing UTF-8 mapping file for font encoding LUC
+ (/var/lib/miktex/.miktex/texmfs/install/tex/latex/kotex-utf/lucenc.dfu
+File: lucenc.dfu 2007/09/05 UTF-8 support for dhucs
+   defining Unicode char U+00B7 (decimal 183)
+   defining Unicode char U+2018 (decimal 8216)
+   defining Unicode char U+2019 (decimal 8217)
+   defining Unicode char U+201C (decimal 8220)
+   defining Unicode char U+201D (decimal 8221)
+   defining Unicode char U+3001 (decimal 12289)
+   defining Unicode char U+3002 (decimal 12290)
+   defining Unicode char U+3008 (decimal 12296)
+   defining Unicode char U+3009 (decimal 12297)
+   defining Unicode char U+300A (decimal 12298)
+   defining Unicode char U+300B (decimal 12299)
+   defining Unicode char U+300C (decimal 12300)
+   defining Unicode char U+300D (decimal 12301)
+   defining Unicode char U+300E (decimal 12302)
+   defining Unicode char U+300F (decimal 12303)
+   defining Unicode char U+3010 (decimal 12304)
+   defining Unicode char U+3011 (decimal 12305)
+   defining Unicode char U+3014 (decimal 12308)
+   defining Unicode char U+3015 (decimal 12309)
+   defining Unicode char U+3016 (decimal 12310)
+   defining Unicode char U+3017 (decimal 12311)
+   defining Unicode char U+3018 (decimal 12312)
+   defining Unicode char U+3019 (decimal 12313)
+   defining Unicode char U+301A (decimal 12314)
+   defining Unicode char U+301B (decimal 12315)
+   defining Unicode char U+FF01 (decimal 65281)
+   defining Unicode char U+FF08 (decimal 65288)
+   defining Unicode char U+FF09 (decimal 65289)
+   defining Unicode char U+FF0C (decimal 65292)
+   defining Unicode char U+FF0E (decimal 65294)
+   defining Unicode char U+FF1A (decimal 65306)
+   defining Unicode char U+FF1B (decimal 65307)
+   defining Unicode char U+FF1C (decimal 65308)
+   defining Unicode char U+FF1D (decimal 65309)
+   defining Unicode char U+FF1E (decimal 65310)
+   defining Unicode char U+FF1F (decimal 65311)
+   defining Unicode char U+FF3B (decimal 65339)
+   defining Unicode char U+FF3D (decimal 65341)
+   defining Unicode char U+FF5B (decimal 65371)
+   defining Unicode char U+FF5D (decimal 65373)
+   defining Unicode char U+FF61 (decimal 65377)
+   defining Unicode char U+FF62 (decimal 65378)
+   defining Unicode char U+FF63 (decimal 65379)
+   defining Unicode char U+FF64 (decimal 65380)
+   defining Unicode char U+FF65 (decimal 65381)
+)
+\@josa=\count286
+\josatoks=\toks19
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/cjk-ko/kolabels-utf.sty
+Package: kolabels-utf 2015/03/20 v1.5 UTF-8 Hangul item labels
+)))
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/tools/indentfirst.sty
+Package: indentfirst 2023/07/02 v1.03 Indent first paragraph (DPC)
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2026/05/19 v2.18d AMS math features
+\@mathmargin=\skip51
+
+For additional information on amsmath, use the `?' option.
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/amsmath/amstext.sty
+Package: amstext 2024/11/17 v2.01 AMS text
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0 generic functions
+\@emptytoks=\toks20
+\ex@=\dimen152
+))
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+\pmbraise@=\dimen153
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/amsmath/amsopn.sty
+Package: amsopn 2022/04/08 v2.04 operator names
+)
+\inf@bad=\count287
+LaTeX Info: Redefining \frac on input line 233.
+\uproot@=\count288
+\leftroot@=\count289
+LaTeX Info: Redefining \overline on input line 398.
+LaTeX Info: Redefining \colon on input line 409.
+\classnum@=\count290
+\DOTSCASE@=\count291
+LaTeX Info: Redefining \ldots on input line 495.
+LaTeX Info: Redefining \dots on input line 498.
+LaTeX Info: Redefining \cdots on input line 619.
+\Mathstrutbox@=\box53
+\strutbox@=\box54
+LaTeX Info: Redefining \big on input line 721.
+LaTeX Info: Redefining \Big on input line 722.
+LaTeX Info: Redefining \bigg on input line 723.
+LaTeX Info: Redefining \Bigg on input line 724.
+\big@size=\dimen154
+LaTeX Font Info:    Redeclaring font encoding OML on input line 742.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 743.
+\macc@depth=\count292
+LaTeX Info: Redefining \bmod on input line 904.
+LaTeX Info: Redefining \pmod on input line 909.
+LaTeX Info: Redefining \smash on input line 939.
+LaTeX Info: Redefining \relbar on input line 969.
+LaTeX Info: Redefining \Relbar on input line 970.
+\c@MaxMatrixCols=\count293
+\dotsspace@=\muskip17
+\c@parentequation=\count294
+\dspbrk@lvl=\count295
+\tag@help=\toks21
+\row@=\count296
+\column@=\count297
+\maxfields@=\count298
+\andhelp@=\toks22
+\eqnshift@=\dimen155
+\alignsep@=\dimen156
+\tagshift@=\dimen157
+\tagwidth@=\dimen158
+\totwidth@=\dimen159
+\lineht@=\dimen160
+\@envbody=\toks23
+\multlinegap=\skip52
+\multlinetaggap=\skip53
+\mathdisplay@stack=\toks24
+LaTeX Info: Redefining \[ on input line 2965.
+LaTeX Info: Redefining \] on input line 2966.
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/geometry/geometry.sty
+Package: geometry 2026/03/07 v6.0 Page Geometry
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics/keyval.sty
+Package: keyval 2026-05-17 v1.15 key=value parser (DPC)
+\KV@toks@=\toks25
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/iftex/iftex.sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+))
+\Gm@cnth=\count299
+\Gm@cntv=\count300
+\c@Gm@tempcnt=\count301
+\Gm@bindingoffset=\dimen161
+\Gm@wd@mp=\dimen162
+\Gm@odd@mp=\dimen163
+\Gm@even@mp=\dimen164
+\Gm@layoutwidth=\dimen165
+\Gm@layoutheight=\dimen166
+\Gm@layouthoffset=\dimen167
+\Gm@layoutvoffset=\dimen168
+\Gm@dimlist=\toks26
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/geometry/geometry.cfg))
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/setspace/setspace.sty
+Package: setspace 2022/12/04 v6.7b set line spacing
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics/graphicx.sty
+Package: graphicx 2026-05-17 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics/graphics.sty
+Package: graphics 2026-05-17 v1.4h Standard LaTeX Graphics (DPC,SPQR)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics/trig.sty
+Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 106.
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2025/09/29 v1.2d Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen169
+\Gin@req@width=\dimen170
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/fancyhdr/fancyhdr.sty
+Package: fancyhdr 2025/02/07 v5.2 Extensive control of page headers and footers
+
+\f@nch@headwidth=\skip54
+\f@nch@offset@elh=\skip55
+\f@nch@offset@erh=\skip56
+\f@nch@offset@olh=\skip57
+\f@nch@offset@orh=\skip58
+\f@nch@offset@elf=\skip59
+\f@nch@offset@erf=\skip60
+\f@nch@offset@olf=\skip61
+\f@nch@offset@orf=\skip62
+\f@nch@height=\skip63
+\f@nch@footalignment=\skip64
+\f@nch@widthL=\skip65
+\f@nch@widthC=\skip66
+\f@nch@widthR=\skip67
+\@temptokenb=\toks27
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/titlesec/titlesec.sty
+Package: titlesec 2025/01/04 v2.17 Sectioning titles
+\ttl@box=\box55
+\beforetitleunit=\skip68
+\aftertitleunit=\skip69
+\ttl@plus=\dimen171
+\ttl@minus=\dimen172
+\ttl@toksa=\toks28
+\titlewidth=\dimen173
+\titlewidthlast=\dimen174
+\titlewidthfirst=\dimen175
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/tocloft/tocloft.sty
+Package: tocloft 2017/08/31 v2.3i parameterised ToC, etc., typesetting
+Package tocloft Info: The document has chapter divisions on input line 51.
+\cftparskip=\skip70
+\cftbeforetoctitleskip=\skip71
+\cftaftertoctitleskip=\skip72
+\cftbeforepartskip=\skip73
+\cftpartnumwidth=\skip74
+\cftpartindent=\skip75
+\cftbeforechapskip=\skip76
+\cftchapindent=\skip77
+\cftchapnumwidth=\skip78
+\cftbeforesecskip=\skip79
+\cftsecindent=\skip80
+\cftsecnumwidth=\skip81
+\cftbeforesubsecskip=\skip82
+\cftsubsecindent=\skip83
+\cftsubsecnumwidth=\skip84
+\cftbeforesubsubsecskip=\skip85
+\cftsubsubsecindent=\skip86
+\cftsubsubsecnumwidth=\skip87
+\cftbeforeparaskip=\skip88
+\cftparaindent=\skip89
+\cftparanumwidth=\skip90
+\cftbeforesubparaskip=\skip91
+\cftsubparaindent=\skip92
+\cftsubparanumwidth=\skip93
+\cftbeforeloftitleskip=\skip94
+\cftafterloftitleskip=\skip95
+\cftbeforefigskip=\skip96
+\cftfigindent=\skip97
+\cftfignumwidth=\skip98
+\c@lofdepth=\count302
+\c@lotdepth=\count303
+\cftbeforelottitleskip=\skip99
+\cftafterlottitleskip=\skip100
+\cftbeforetabskip=\skip101
+\cfttabindent=\skip102
+\cfttabnumwidth=\skip103
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/url/url.sty
+\Urlmuskip=\muskip18
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/listings/listings.sty
+\lst@mode=\count304
+\lst@gtempboxa=\box56
+\lst@token=\toks29
+\lst@length=\count305
+\lst@currlwidth=\dimen176
+\lst@column=\count306
+\lst@pos=\count307
+\lst@lostspace=\dimen177
+\lst@width=\dimen178
+\lst@newlines=\count308
+\lst@lineno=\count309
+\lst@maxwidth=\dimen179
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/listings/lstpatch.sty
+File: lstpatch.sty 2025/11/14 1.11b (Carsten Heinz)
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/listings/lstmisc.sty
+File: lstmisc.sty 2025/11/14 1.11b (Carsten Heinz)
+\c@lstnumber=\count310
+\lst@skipnumbers=\count311
+\lst@framebox=\box57
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/listings/listings.cfg
+File: listings.cfg 2025/11/14 1.11b listings configuration
+))
+Package: listings 2025/11/14 1.11b (Carsten Heinz)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/base/makeidx.sty
+Package: makeidx 2021/10/04 v1.0m Standard LaTeX package
+))
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/base/fontenc.sty
+Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/booktabs/booktabs.sty
+Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
+\heavyrulewidth=\dimen180
+\lightrulewidth=\dimen181
+\cmidrulewidth=\dimen182
+\belowrulesep=\dimen183
+\belowbottomsep=\dimen184
+\aboverulesep=\dimen185
+\abovetopsep=\dimen186
+\cmidrulesep=\dimen187
+\cmidrulekern=\dimen188
+\defaultaddspace=\dimen189
+\@cmidla=\count312
+\@cmidlb=\count313
+\@aboverulesep=\dimen190
+\@belowrulesep=\dimen191
+\@thisruleclass=\count314
+\@lastruleclass=\count315
+\@thisrulewidth=\dimen192
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/tools/tabularx.sty
+Package: tabularx 2023/12/11 v2.12a `tabularx' package (DPC)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/tools/array.sty
+Package: array 2026/02/24 v2.7b Tabular extension package (FMi)
+\col@sep=\dimen193
+\ar@mcellbox=\box58
+\extrarowheight=\dimen194
+\NC@list=\toks30
+\extratabsurround=\skip104
+\backup@length=\skip105
+\ar@cellbox=\box59
+)
+\TX@col@width=\dimen195
+\TX@old@table=\dimen196
+\TX@old@col=\dimen197
+\TX@target=\dimen198
+\TX@delta=\dimen199
+\TX@cols=\count316
+\TX@ftn=\toks31
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/tools/longtable.sty
+Package: longtable 2026-01-28 v4.27 Multi-page Table package (DPC)
+\LTleft=\skip106
+\LTright=\skip107
+\LTpre=\skip108
+\LTpost=\skip109
+\LTchunksize=\count317
+\LTcapwidth=\dimen256
+\LT@head=\box60
+\LT@firsthead=\box61
+\LT@foot=\box62
+\LT@lastfoot=\box63
+\LT@gbox=\box64
+\LT@cols=\count318
+\LT@rows=\count319
+\c@LT@tables=\count320
+\c@LT@chunks=\count321
+\LT@p@ftn=\toks32
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/multirow/multirow.sty
+Package: multirow 2024/11/12 v2.9 Span multiple rows of a table
+\multirow@colwidth=\skip110
+\multirow@cntb=\count322
+\multirow@dima=\skip111
+\bigstrutjot=\dimen257
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count323
+\float@exts=\toks33
+\float@box=\box65
+\@float@everytoks=\toks34
+\@floatcapt=\box66
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/caption/subcaption.sty
+Package: subcaption 2023/07/28 v1.6b Sub-captions (AR)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/caption/caption.sty
+Package: caption 2023/08/05 v3.6o Customizing captions (AR)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/caption/caption3.sty
+Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
+\caption@tempdima=\dimen258
+\captionmargin=\dimen259
+\caption@leftmargin=\dimen260
+\caption@rightmargin=\dimen261
+\caption@width=\dimen262
+\caption@indent=\dimen263
+\caption@parindent=\dimen264
+\caption@hangindent=\dimen265
+Package caption Info: Standard document class detected.
+)
+\c@caption@flags=\count324
+\c@continuedfloat=\count325
+Package caption Info: float package is loaded.
+Package caption Info: listings package is loaded.
+Package caption Info: longtable package is loaded.
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/caption/ltcaption.sty
+Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
+))
+Package caption Info: New subtype `subfigure' on input line 238.
+\c@subfigure=\count326
+Package caption Info: New subtype `subtable' on input line 238.
+\c@subtable=\count327
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/graphics/mathcolor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
+Package xcolor Info: Model `RGB' extended on input line 1365.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1367.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/colortbl/colortbl.sty
+Package: colortbl 2026/05/01 v1.0l Color table columns (DPC)
+
+new hooks used!!
+\minrowclearance=\skip112
+\rownum=\count328
+) (/var/lib/miktex/.miktex/texmfs/install/tex/latex/enumitem/enumitem.sty
+Package: enumitem 2025/02/06 v3.11 Customized lists
+\labelindent=\skip113
+\enit@outerparindent=\dimen266
+\enit@toks=\toks35
+\enit@inbox=\box67
+\enit@count@id=\count329
+\enitdp@description=\count330
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2026-06-17 v7.01r Hypertext links for LaTeX
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/kvsetkeys/kvsetkeys.sty
+Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/kvdefinekeys/kvdefinekeys.s
+ty
+Package: kvdefinekeys 2019-12-19 v1.6 Define keys (HO)
+) (/var/lib/miktex/.miktex/texmfs/install/tex/generic/pdfescape/pdfescape.sty
+Package: pdfescape 2019/12/09 v1.15 Implements pdfTeX's escape features (HO)
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/ltxcmds/ltxcmds.sty
+Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/pdftexcmds/pdftexcmds.sty
+Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
+)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/infwarerr/infwarerr.sty
+Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
+)
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+))
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/hycolor/hycolor.sty
+Package: hycolor 2020-01-27 v1.10 Color options for hyperref/bookmark (HO)
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/hyperref/nameref.sty
+Package: nameref 2026-01-29 v2.58 Cross-referencing by name of section
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/refcount/refcount.sty
+Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/gettitlestring/gettitlestri
+ng.sty
+Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/kvoptions/kvoptions.sty
+Package: kvoptions 2022-06-15 v3.15 Key value format for package options (HO)
+))
+\c@section@level=\count331
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2025/10/02 v2.5m e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count332
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/stringenc/stringenc.sty
+Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO
+)
+)
+\@linkdim=\dimen267
+\Hy@linkcounter=\count333
+\Hy@pagecounter=\count334
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2026-06-17 v7.01r Hyperref: PDFDocEncoding definition (HO)
+Now handling font encoding PD1 ...
+... no UTF-8 mapping file for font encoding PD1
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/intcalc/intcalc.sty
+Package: intcalc 2019/12/15 v1.3 Expandable calculations with integers (HO)
+)
+\Hy@SavedSpaceFactor=\count335
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/hyperref/puenc.def
+File: puenc.def 2026-06-17 v7.01r Hyperref: PDF Unicode definition (HO)
+Now handling font encoding PU ...
+... no UTF-8 mapping file for font encoding PU
+)
+Package hyperref Info: Hyper figures OFF on input line 4199.
+Package hyperref Info: Link nesting OFF on input line 4204.
+Package hyperref Info: Hyper index ON on input line 4207.
+Package hyperref Info: Plain pages OFF on input line 4214.
+Package hyperref Info: Backreferencing OFF on input line 4219.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4466.
+\c@Hy@tempcnt=\count336
+LaTeX Info: Redefining \url on input line 4805.
+\XeTeXLinkMargin=\dimen268
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/bitset/bitset.sty
+Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/bigintcalc/bigintcalc.sty
+Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO
+)
+))
+\Fld@menulength=\count337
+\Field@Width=\dimen269
+\Fld@charsize=\dimen270
+Package hyperref Info: Hyper figures OFF on input line 6091.
+Package hyperref Info: Link nesting OFF on input line 6096.
+Package hyperref Info: Hyper index ON on input line 6099.
+Package hyperref Info: backreferencing OFF on input line 6106.
+Package hyperref Info: Link coloring OFF on input line 6111.
+Package hyperref Info: Link coloring with OCG OFF on input line 6116.
+Package hyperref Info: PDF/A mode OFF on input line 6121.
+\Hy@abspage=\count338
+\c@Item=\count339
+\c@Hfootnote=\count340
+)
+Package hyperref Info: Driver (autodetected): hpdftex.
+ (/var/lib/miktex/.miktex/texmfs/install/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2026-06-17 v7.01r Hyperref driver for pdfTeX
+\Fld@listcount=\count341
+\c@bookmark@seq@number=\count342
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/rerunfilecheck/rerunfilecheck
+.sty
+Package: rerunfilecheck 2025-06-21 v1.11 Rerun checks for auxiliary files (HO)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/generic/uniquecounter/uniquecounter
+.sty
+Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
+)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
+84.
+)
+\Hy@SectionHShift=\skip114
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/l3backend/l3backend-pdftex.de
+f
+File: l3backend-pdftex.def 2026-02-18 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count343
+) (RFVisualizer_interim_report.aux)
+\openout1 = `RFVisualizer_interim_report.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for LUC/nanummj/m/n on input line 52.
+LaTeX Font Info:    Trying to load font information for LUC+nanummj on input li
+ne 52.
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/nanumtype1/lucnanummj.fd
+File: lucnanummj.fd 2013/02/12 v0.1 Nanum Myeongjo font definitions
+)
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: <default>
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(85.35826pt, 426.79135pt, 85.35826pt)
+* v-part:(T,H,B)=(85.35826pt, 674.33032pt, 85.35826pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=426.79135pt
+* \textheight=674.33032pt
+* \oddsidemargin=13.08827pt
+* \evensidemargin=13.08827pt
+* \topmargin=-23.91173pt
+* \headheight=14.0pt
+* \headsep=25.0pt
+* \topskip=11.0pt
+* \footskip=30.0pt
+* \marginparwidth=50.0pt
+* \marginparsep=10.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count344
+\scratchdimen=\dimen271
+\scratchbox=\box68
+\nofMPsegments=\count345
+\nofMParguments=\count346
+\everyMPshowfont=\toks36
+\MPscratchCnt=\count347
+\MPscratchDim=\dimen272
+\MPnumerator=\count348
+\makeMPintoPDFobject=\count349
+\everyMPtoPDFconversion=\toks37
+)
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/epstopdf-pkg/epstopdf-base.st
+y
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+ (/var/lib/miktex/.miktex/texmfs/install/tex/latex/00miktex/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
+))
+\c@lstlisting=\count350
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: hyperref package is loaded.
+Package caption Info: End \AtBeginDocument code.
+Package hyperref Info: Link coloring OFF on input line 52.
+(RFVisualizer_interim_report.out) (RFVisualizer_interim_report.out)
+\@outlinefile=\write3
+\openout3 = `RFVisualizer_interim_report.out'.
+
+Package hyperref Info: Option `pageanchor' set `false' on input line 54.
+LaTeX Font Info:    Trying to load font information for LUC+nanumgt on input li
+ne 56.
+
+(/var/lib/miktex/.miktex/texmfs/install/tex/latex/nanumtype1/lucnanumgt.fd
+File: lucnanumgt.fd 2013/02/12 v0.1 Nanum Gothic font definitions
+)
+<pnulogo.jpg, id=139, 161.85469pt x 161.85469pt>
+File: pnulogo.jpg Graphic file (type jpg)
+<use pnulogo.jpg>
+Package pdftex.def Info: pnulogo.jpg  used on input line 56.
+(pdftex.def)             Requested size: 157.9107pt x 157.92004pt.
+
+
+[1
+
+{/var/lib/miktex/.miktex/texmfs/data/fonts/map/pdftex/pdftex.map} <./pnulogo.jp
+g>]
+Package hyperref Info: Option `pageanchor' set `true' on input line 58.
+ (RFVisualizer_interim_report.toc
+
+[1
+
+])
+\tf@toc=\write4
+\openout4 = `RFVisualizer_interim_report.toc'.
+
+
+
+[2] (RFVisualizer_interim_report.lof)
+\tf@lof=\write5
+\openout5 = `RFVisualizer_interim_report.lof'.
+
+
+
+[3
+
+] (RFVisualizer_interim_report.lot)
+\tf@lot=\write6
+\openout6 = `RFVisualizer_interim_report.lot'.
+
+
+
+[4
+
+]
+
+[5
+
+
+]
+ 1.
+
+
+[1
+
+
+]
+
+[2]
+ 2.
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--147
+[]|\LUC/nanummj/m/n/10.95/d6 T\LUC/nanummj/m/n/10.95/ba t\LUC/nanummj/m/n/10.95
+/c7 @ \T1/cmr/m/n/10.95 3DGS, \LUC/nanummj/m/n/10.95/c8 ^^D\LUC/nanummj/m/n/10.
+95/d3 ^^L \LUC/nanummj/m/n/10.95/ac Ä\LUC/nanummj/m/n/10.95/c0 °\LUC/nanummj/m/
+n/10.95/c7 @
+ []
+
+
+Underfull \hbox (badness 2556) in paragraph at lines 146--147
+\LUC/nanummj/m/n/10.95/ac ^^@\LUC/nanummj/m/n/10.95/c6 °\LUC/nanummj/m/n/10.95/
+c2 Ü\LUC/nanummj/m/n/10.95/c5 H\LUC/nanummj/m/n/10.95/c7 X \LUC/nanummj/m/n/10.
+95/c2 Ü\LUC/nanummj/m/n/10.95/ac ^^A \LUC/nanummj/m/n/10.95/d4 ˆ\LUC/nanummj/m/
+n/10.95/c9 È\LUC/nanummj/m/n/10.95/ac ü \LUC/nanummj/m/n/10.95/ba T\LUC/nanummj
+/m/n/10.95/c2 Ü\LUC/nanummj/m/n/10.95/c7 X
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 147--147
+[]|\LUC/nanummj/m/n/10.95/ac ^^A \T1/cmr/m/n/10.95 ESP32\LUC/nanummj/m/n/10.95/
+ac ^^@ \T1/cmr/m/n/10.95 Wi-
+ []
+
+
+
+[3
+
+]
+
+[4]
+
+[5]
+ 3.
+<figures/pgsr_mesh.png, id=370, 1623.06375pt x 893.3375pt>
+File: figures/pgsr_mesh.png Graphic file (type png)
+<use figures/pgsr_mesh.png>
+Package pdftex.def Info: figures/pgsr_mesh.png  used on input line 184.
+(pdftex.def)             Requested size: 409.72255pt x 225.51482pt.
+
+
+[6
+
+]
+<figures/room_envelope.png, id=382, 1124.01106pt x 365.17606pt>
+File: figures/room_envelope.png Graphic file (type png)
+<use figures/room_envelope.png>
+Package pdftex.def Info: figures/room_envelope.png  used on input line 191.
+(pdftex.def)             Requested size: 418.2537pt x 135.88197pt.
+<figures/embedded_flow.png, id=383, 1927.2pt x 1084.05pt>
+File: figures/embedded_flow.png Graphic file (type png)
+<use figures/embedded_flow.png>
+Package pdftex.def Info: figures/embedded_flow.png  used on input line 204.
+(pdftex.def)             Requested size: 426.79135pt x 240.06316pt.
+
+
+[7 <./figures/pgsr_mesh.png> <./figures/room_envelope.png>]
+
+[8 <./figures/embedded_flow.png (PNG copy)>]
+
+[9]
+ 4.
+<figures/sionna_scene.png, id=403, 794.97pt x 578.16pt>
+File: figures/sionna_scene.png Graphic file (type png)
+<use figures/sionna_scene.png>
+Package pdftex.def Info: figures/sionna_scene.png  used on input line 252.
+(pdftex.def)             Requested size: 354.2376pt x 257.62886pt.
+
+
+[10
+
+]
+<figures/coverage_baseline.png, id=413, 722.7pt x 505.89pt>
+File: figures/coverage_baseline.png Graphic file (type png)
+<use figures/coverage_baseline.png>
+Package pdftex.def Info: figures/coverage_baseline.png  used on input line 269.
+
+(pdftex.def)             Requested size: 136.57635pt x 95.6029pt.
+<figures/coverage_delta.png, id=414, 722.7pt x 505.89pt>
+File: figures/coverage_delta.png Graphic file (type png)
+<use figures/coverage_delta.png>
+Package pdftex.def Info: figures/coverage_delta.png  used on input line 274.
+(pdftex.def)             Requested size: 136.57635pt x 95.6029pt.
+<figures/coverage_variant.png, id=415, 722.7pt x 505.89pt>
+File: figures/coverage_variant.png Graphic file (type png)
+<use figures/coverage_variant.png>
+Package pdftex.def Info: figures/coverage_variant.png  used on input line 279.
+(pdftex.def)             Requested size: 136.57635pt x 95.6029pt.
+
+
+[11 <./figures/sionna_scene.png>]
+<figures/paths_baseline.png, id=421, 722.7pt x 505.89pt>
+File: figures/paths_baseline.png Graphic file (type png)
+<use figures/paths_baseline.png>
+Package pdftex.def Info: figures/paths_baseline.png  used on input line 290.
+(pdftex.def)             Requested size: 209.1301pt x 146.38785pt.
+<figures/paths_variant.png, id=422, 722.7pt x 505.89pt>
+File: figures/paths_variant.png Graphic file (type png)
+<use figures/paths_variant.png>
+Package pdftex.def Info: figures/paths_variant.png  used on input line 295.
+(pdftex.def)             Requested size: 209.1301pt x 146.38785pt.
+<figures/network_server_log.jpg, id=424, 472.01344pt x 414.79968pt>
+File: figures/network_server_log.jpg Graphic file (type jpg)
+<use figures/network_server_log.jpg>
+Package pdftex.def Info: figures/network_server_log.jpg  used on input line 314
+.
+(pdftex.def)             Requested size: 209.1301pt x 183.78462pt.
+<figures/network_db.jpg, id=425, 450.18187pt x 124.96687pt>
+File: figures/network_db.jpg Graphic file (type jpg)
+<use figures/network_db.jpg>
+Package pdftex.def Info: figures/network_db.jpg  used on input line 319.
+(pdftex.def)             Requested size: 209.1301pt x 58.0537pt.
+
+
+[12 <./figures/coverage_baseline.png> <./figures/coverage_delta.png> <./figures
+/coverage_variant.png> <./figures/paths_baseline.png> <./figures/paths_variant.
+png>]
+<figures/network_dashboard.jpg, id=437, 471.26062pt x 165.61874pt>
+File: figures/network_dashboard.jpg Graphic file (type jpg)
+<use figures/network_dashboard.jpg>
+Package pdftex.def Info: figures/network_dashboard.jpg  used on input line 330.
+
+(pdftex.def)             Requested size: 409.72255pt x 143.99362pt.
+
+
+[13 <./figures/network_server_log.jpg> <./figures/network_db.jpg> <./figures/ne
+twork_dashboard.jpg>]
+
+[14]
+
+[15]
+ 5.
+
+
+[16
+
+]
+
+[17]
+
+[18]
+
+[19]
+ 6.
+
+Underfull \hbox (badness 10000) in paragraph at lines 468--469
+[]|\LUC/nanummj/m/n/10.95/d4 ˆ\LUC/nanummj/m/n/10.95/c9 È\LUC/nanummj/m/n/10.95
+/bc Ä \LUC/nanummj/m/n/10.95/d0 l\LUC/nanummj/m/n/10.95/ae 0\T1/cmr/m/n/10.95 /
+\LUC/nanummj/m/n/10.95/c2 Ü\LUC/nanummj/m/n/10.95/ac ^^D\T1/cmr/m/n/10.95 , 5--
+10
+ []
+
+
+Underfull \hbox (badness 1168) in paragraph at lines 468--469
+\T1/cmr/m/n/10.95 FPS \LUC/nanummj/m/n/10.95/ac ^^@\LUC/nanummj/m/n/10.95/b2 ¥ 
+\LUC/nanummj/m/n/10.95/c5 ì\LUC/nanummj/m/n/10.95/bd €\T1/cmr/m/n/10.95 , PSRAM
+
+ []
+
+
+
+[20
+
+]
+
+[21]
+
+[22]
+ 7.
+
+
+[23
+
+] (RFVisualizer_interim_report.bbl)
+
+[24
+
+
+] (RFVisualizer_interim_report.aux)
+ ***********
+LaTeX2e <2026-06-01>
+L3 programming layer <2026-06-18>
+ ***********
+Package rerunfilecheck Info: File `RFVisualizer_interim_report.out' has not cha
+nged.
+(rerunfilecheck)             Checksum: 475563E411771C267D923868CCDB183A;5077.
+ ) 
+Here is how much of TeX's memory you used:
+ 16145 strings out of 469450
+ 259204 string characters out of 5460558
+ 696630 words of memory out of 5000000
+ 44717 multiletter control sequences out of 15000+600000
+ 710295 words of font info for 296 fonts, out of 8000000 for 9000
+ 0 hyphenation exceptions out of 8191
+ 74i,12n,83p,869b,670s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ </var/lib/miktex/.miktex/texmfs/data/fonts/pk/ljfour/jknappen/ec/dpi600/ecti
+1095.pk> </var/lib/miktex/.miktex/texmfs/data/fonts/pk/ljfour/jknappen/ec/dpi60
+0/ecrm1000.pk> </var/lib/miktex/.miktex/texmfs/data/fonts/pk/ljfour/jknappen/ec
+/dpi600/ecbx1200.pk> </var/lib/miktex/.miktex/texmfs/data/fonts/pk/ljfour/jknap
+pen/ec/dpi600/ectt1095.pk> </var/lib/miktex/.miktex/texmfs/data/fonts/pk/ljfour
+/jknappen/ec/dpi600/tcrm1095.pk> </var/lib/miktex/.miktex/texmfs/data/fonts/pk/
+ljfour/jknappen/ec/dpi600/ecbx1440.pk> </var/lib/miktex/.miktex/texmfs/data/fon
+ts/pk/ljfour/jknappen/ec/dpi600/ecbx1728.pk> </var/lib/miktex/.miktex/texmfs/da
+ta/fonts/pk/ljfour/jknappen/ec/dpi600/ecrm1095.pk> </var/lib/miktex/.miktex/tex
+mfs/data/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1095.pk> </var/lib/miktex/.mikt
+ex/texmfs/data/fonts/pk/ljfour/jknappen/ec/dpi600/ecrm1200.pk> </var/lib/miktex
+/.miktex/texmfs/data/fonts/pk/ljfour/jknappen/ec/dpi600/ecrm1440.pk> </var/lib/
+miktex/.miktex/texmfs/data/fonts/pk/ljfour/jknappen/ec/dpi600/ecsx1728.pk></var
+/lib/miktex/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmmi10.pfb></
+var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmr10.pfb>
+</var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmr8.pfb
+></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmsy10.
+pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmsy
+8.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nan
+umgtbac.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtyp
+e1/nanumgtbae.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/na
+numtype1/nanumgtbb3.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/pub
+lic/nanumtype1/nanumgtbbc.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/typ
+e1/public/nanumtype1/nanumgtbc1.pfb></var/lib/miktex/.miktex/texmfs/install/fon
+ts/type1/public/nanumtype1/nanumgtbc2.pfb></var/lib/miktex/.miktex/texmfs/insta
+ll/fonts/type1/public/nanumtype1/nanumgtbc5.pfb></var/lib/miktex/.miktex/texmfs
+/install/fonts/type1/public/nanumtype1/nanumgtbc7.pfb></var/lib/miktex/.miktex/
+texmfs/install/fonts/type1/public/nanumtype1/nanumgtbc8.pfb></var/lib/miktex/.m
+iktex/texmfs/install/fonts/type1/public/nanumtype1/nanumgtbc9.pfb></var/lib/mik
+tex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanumgtbd1.pfb></var/l
+ib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanumgtbd6.pfb><
+/var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbac
+.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanu
+mmjbad.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype
+1/nanummjbae.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nan
+umtype1/nanummjbb0.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/publ
+ic/nanumtype1/nanummjbb1.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type
+1/public/nanumtype1/nanummjbb2.pfb></var/lib/miktex/.miktex/texmfs/install/font
+s/type1/public/nanumtype1/nanummjbb3.pfb></var/lib/miktex/.miktex/texmfs/instal
+l/fonts/type1/public/nanumtype1/nanummjbb4.pfb></var/lib/miktex/.miktex/texmfs/
+install/fonts/type1/public/nanumtype1/nanummjbb5.pfb></var/lib/miktex/.miktex/t
+exmfs/install/fonts/type1/public/nanumtype1/nanummjbb7.pfb></var/lib/miktex/.mi
+ktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbb8.pfb></var/lib/mikt
+ex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbb9.pfb></var/li
+b/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbba.pfb></
+var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbbb.
+pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanum
+mjbbc.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1
+/nanummjbbd.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanu
+mtype1/nanummjbbe.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/publi
+c/nanumtype1/nanummjbc0.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1
+/public/nanumtype1/nanummjbc1.pfb></var/lib/miktex/.miktex/texmfs/install/fonts
+/type1/public/nanumtype1/nanummjbc2.pfb></var/lib/miktex/.miktex/texmfs/install
+/fonts/type1/public/nanumtype1/nanummjbc5.pfb></var/lib/miktex/.miktex/texmfs/i
+nstall/fonts/type1/public/nanumtype1/nanummjbc6.pfb></var/lib/miktex/.miktex/te
+xmfs/install/fonts/type1/public/nanumtype1/nanummjbc7.pfb></var/lib/miktex/.mik
+tex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbc8.pfb></var/lib/mikte
+x/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbc9.pfb></var/lib
+/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbcc.pfb></v
+ar/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjbcd.p
+fb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanumm
+jbce.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/
+nanummjbd0.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanum
+type1/nanummjbd1.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public
+/nanumtype1/nanummjbd2.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/
+public/nanumtype1/nanummjbd3.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/
+type1/public/nanumtype1/nanummjbd4.pfb></var/lib/miktex/.miktex/texmfs/install/
+fonts/type1/public/nanumtype1/nanummjbd5.pfb></var/lib/miktex/.miktex/texmfs/in
+stall/fonts/type1/public/nanumtype1/nanummjbd6.pfb></var/lib/miktex/.miktex/tex
+mfs/install/fonts/type1/public/nanumtype1/nanummjmac.pfb></var/lib/miktex/.mikt
+ex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmad.pfb></var/lib/miktex
+/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmae.pfb></var/lib/
+miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmaf.pfb></va
+r/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmb0.pf
+b></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummj
+mb1.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/n
+anummjmb2.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumt
+ype1/nanummjmb3.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/
+nanumtype1/nanummjmb4.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/p
+ublic/nanumtype1/nanummjmb5.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/t
+ype1/public/nanumtype1/nanummjmb6.pfb></var/lib/miktex/.miktex/texmfs/install/f
+onts/type1/public/nanumtype1/nanummjmb7.pfb></var/lib/miktex/.miktex/texmfs/ins
+tall/fonts/type1/public/nanumtype1/nanummjmb8.pfb></var/lib/miktex/.miktex/texm
+fs/install/fonts/type1/public/nanumtype1/nanummjmb9.pfb></var/lib/miktex/.mikte
+x/texmfs/install/fonts/type1/public/nanumtype1/nanummjmba.pfb></var/lib/miktex/
+.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmbb.pfb></var/lib/m
+iktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmbc.pfb></var
+/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmbd.pfb
+></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjm
+be.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/na
+nummjmbf.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumty
+pe1/nanummjmc0.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/n
+anumtype1/nanummjmc1.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/pu
+blic/nanumtype1/nanummjmc2.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/ty
+pe1/public/nanumtype1/nanummjmc5.pfb></var/lib/miktex/.miktex/texmfs/install/fo
+nts/type1/public/nanumtype1/nanummjmc6.pfb></var/lib/miktex/.miktex/texmfs/inst
+all/fonts/type1/public/nanumtype1/nanummjmc7.pfb></var/lib/miktex/.miktex/texmf
+s/install/fonts/type1/public/nanumtype1/nanummjmc8.pfb></var/lib/miktex/.miktex
+/texmfs/install/fonts/type1/public/nanumtype1/nanummjmc9.pfb></var/lib/miktex/.
+miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmcc.pfb></var/lib/mi
+ktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmcd.pfb></var/
+lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmce.pfb>
+</var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nanummjmc
+f.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtype1/nan
+ummjmd0.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/nanumtyp
+e1/nanummjmd1.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/public/na
+numtype1/nanummjmd2.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/type1/pub
+lic/nanumtype1/nanummjmd3.pfb></var/lib/miktex/.miktex/texmfs/install/fonts/typ
+e1/public/nanumtype1/nanummjmd4.pfb></var/lib/miktex/.miktex/texmfs/install/fon
+ts/type1/public/nanumtype1/nanummjmd5.pfb></var/lib/miktex/.miktex/texmfs/insta
+ll/fonts/type1/public/nanumtype1/nanummjmd6.pfb></var/lib/miktex/.miktex/texmfs
+/install/fonts/type1/public/nanumtype1/nanummjmd7.pfb>
+Output written on RFVisualizer_interim_report.pdf (30 pages, 12511242 bytes).
+PDF statistics:
+ 1188 PDF objects out of 1200 (max. 8388607)
+ 105 named destinations out of 1000 (max. 500000)
+ 338 words of extra memory for PDF output out of 10000 (max. 10000000)
+
