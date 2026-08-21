@@ -13,14 +13,17 @@ simulation, and measured received signal strength indicator (RSSI) values in a c
 metric coordinate system. PGSR provides the Gaussian scene and surface information,
 while a closed proxy scene is constructed for Sionna RT. Five ESP32 devices collect
 RSSI samples through an ESP-NOW gateway, an STM32 preprocessor, and an MQTT backend.
-Device-dependent sensitivity is compensated using measurements obtained at a common
-reference position. Three estimators are evaluated using the same calibration and test
-split: raw Sionna RT, inverse distance weighting (IDW) using measurements only, and
-residual IDW that interpolates the difference between measurements and Sionna RT.
+Device-dependent sensitivity is compensated within each run using measurements obtained
+at a common reference position. Four estimators are evaluated using the same calibration
+and test split: raw Sionna RT, inverse distance weighting (IDW) using measurements only,
+residual IDW that interpolates the difference between measurements and Sionna RT, and a
+global-bias-corrected Sionna RT baseline.
 Functional tests show that a synthetic blocker removes the configured line-of-sight
-path and changes valid coverage cells by up to 8.426 dB. Corridor measurements are
-reserved for the final quantitative comparison of the three estimators.
-[학생: 복도 실험 확정 후 초록 마지막 문장을 결과 수치와 H3 판정으로 교체]
+path and changes valid coverage cells by up to 8.426 dB. At six held-out corridor
+positions, residual IDW reduced MAE from 13.05 to 10.10 dB and RMSE from 16.22 to
+12.68 dB relative to plain IDW, while global bias achieved the lowest MAE of 7.48 dB.
+These results are a preliminary evaluation because only two runs were available and
+device-offset repeatability was limited.
 
 **Keywords**: 3D Gaussian Splatting, PGSR, Sionna RT, RSSI, Residual IDW, ESP32, Radio Map
 
@@ -34,9 +37,9 @@ reserved for the final quantitative comparison of the three estimators.
 
 본 연구의 목표는 사진 기반 3차원 장면, Sionna RT 전파 시뮬레이션과 다중 장치 RSSI 측정을 하나의 좌표 및 데이터 계약으로 연결하는 것이다. 구체적으로 (1) PGSR 장면에서 전파 계산용으로 닫힌 프록시 장면(Proxy Scene)을 구성하고 구조 변화가 Sionna RT 결과에 반영되는지, (2) 보정 지점의 실측 잔차를 통해 Sionna RT 결과를 보정할 때 측정값만 보간한 일반 IDW와 비교하여 시험 지점 오차가 어떻게 달라지는지, (3) 다섯 대의 RSSI 장치에서 장치 편차와 품질 정보가 포함된 재현 가능한 분석 입력을 도출할 수 있는지를 검증한다.
 
-{{본 연구의 기여는 다음과 같다. 사진 기반 3DGS 장면에서 전파 계산이 가능한 닫힌 프록시 장면을 구성하고 두 표현을 동일한 미터 좌표로 정합하는 절차를 제시한다. 또한 시뮬레이션의 공간 분포와 소수 실측을 결합하는 잔차 IDW를 도입하고, 세 추정 방법을 동일한 보정/시험 분할에서 비교하는 평가 틀을 마련한다. 마지막으로 다섯 대의 저비용 장치로 장치 편차와 품질 정보가 포함된 재현 가능한 계측 데이터를 도출하는 데이터 계약을 설계하고 자동시험을 통해 검증한다.}}
+본 연구의 기여는 다음과 같다. 사진 기반 3DGS 장면에서 전파 계산이 가능한 닫힌 프록시 장면을 구성하고 두 표현을 동일한 미터 좌표로 정합하는 절차를 제시한다. 또한 시뮬레이션의 공간 분포와 소수 실측을 결합하는 잔차 IDW를 도입하고, 원시 Sionna RT, 일반 IDW, 잔차 IDW와 전역 편향 보정을 동일한 보정/시험 분할에서 비교하는 평가 틀을 마련한다. 마지막으로 다섯 대의 저비용 장치로 장치 편차와 품질 정보가 포함된 계측 데이터를 도출하고, 원본 데이터의 누락을 포함한 품질 한계를 보존하는 분석 절차를 제시한다.
 
-{{본 연구의 정량 평가는 복도에서 수집하는 데이터를 대상으로 진행한다.}} 실시간 SIBR Viewer 합성, IMU 기반 시점 제어와 LCD 영상 전송은 전체 프로젝트의 후속 계층이며 본 논문의 정량 평가 범위에서 제외한다. 2장에서는 관련 연구를 정리하고, 3장에서는 문제 정의와 제안 방법을 설명한다. 4장에서는 기능 검증과 복도 실험 결과를 제시하며, 5장에서 결론을 맺는다.
+본 연구의 정량 평가는 부산대학교 4층 복도에서 수집한 두 반복 측정을 대상으로 진행하였다. 실시간 SIBR Viewer 합성, IMU 기반 시점 제어와 LCD 영상 전송은 전체 프로젝트의 후속 계층이며 본 논문의 정량 평가 범위에서 제외한다. 2장에서는 관련 연구를 정리하고, 3장에서는 문제 정의와 제안 방법을 설명한다. 4장에서는 기능 검증과 복도 실험 결과를 제시하며, 5장에서 결론을 맺는다.
 
 ## 2. 관련 연구
 
@@ -134,12 +137,12 @@ EQ(1) R(x)`=`{hat R} _{S} (x)`+`b(x)`+`eta (x)
 <!-- 식 (2): w_i(x) = 1 / (‖x − x_i‖_2^p + ε) -->
 EQ(2) w _{i} (x)`=`{1} over {{VERT x-x _{i} VERT} _{2} ^{p}`+`epsilon}
 
-비교하는 세 방법은 다음과 같다. Sionna RT 원시 예측은 별도의 실측 보정 없이 시뮬레이션 예측 R̂_S(x)를 그대로 사용하고, 일반 IDW는 보정 RSSI를 식 (2)의 가중치로 가중 평균한다. Sionna RT + 잔차 IDW는 보정 위치에서 잔차 e_i = R_i − R̂_S(x_i)를 계산하고 이를 보간하여 시뮬레이션 예측에 더한다(식 (3)).
+비교하는 네 방법은 다음과 같다. Sionna RT 원시 예측은 별도의 실측 보정 없이 시뮬레이션 예측 R̂_S(x)를 그대로 사용하고, 일반 IDW는 보정 RSSI를 식 (2)의 가중치로 가중 평균한다. Sionna RT + 잔차 IDW는 보정 위치에서 잔차 e_i = R_i − R̂_S(x_i)를 계산하고 이를 보간하여 시뮬레이션 예측에 더한다(식 (3)). 전역 편향 보정은 보정 위치 잔차의 산술평균을 모든 Sionna RT 예측에 동일하게 더한다.
 
 <!-- 식 (3): R̂_hybrid(x) = R̂_S(x) + Σ_i w_i(x) e_i / Σ_i w_i(x) -->
 EQ(3) {hat R} _{hybrid} (x)`=`{hat R} _{S} (x)`+`{SUM _{i} w _{i} (x) e _{i}} over {SUM _{i} w _{i} (x)}
 
-세 방법은 같은 보정/시험 분할과 좌표를 사용한다. 시험 값은 IDW 지수, 재질 또는 송신 출력을 선정하는 데 사용하지 않는다.
+네 방법은 같은 보정/시험 분할과 좌표를 사용한다. 시험 값은 IDW 지수, 재질 또는 송신 출력을 선정하는 데 사용하지 않는다.
 
 ### 3.7 평가지표
 
@@ -219,145 +222,150 @@ H1을 검증하기 위해 동일한 송신기·수신기, 시드와 커버리지
 | STM32 on device | Flash and execution records | Full end-to-end field performance |
 | Serial-MQTT bridge | JSON normalization and publishing | Corridor BSSID/channel preservation |
 
-분석 도구는 요약, Sionna 지점과 Sionna 격자 데이터를 입력으로 받아 세 방법을 계산한다. 보정 행만 IDW와 잔차 IDW의 입력으로 사용하고 시험 행은 지표 계산에만 사용한다. 합성 입력 시험에서는 보정 좌표 직접 반환, IDW 지수와 엡실론 검사, 보정 잔차만을 활용한 하이브리드 격자, 세 방법의 MAE/RMSE 계산과 동일 색상 범위 적용을 확인하였다. 합성 요약 데이터는 코드 연결 검증에만 활용하며 복도 실측 결과에는 포함하지 않는다.
+분석 도구는 요약, Sionna 지점과 Sionna 격자 데이터를 입력으로 받아 네 방법을 계산한다. 보정 행만 IDW, 잔차 IDW와 전역 편향 보정의 입력으로 사용하고 시험 행은 지표 계산에만 사용한다. 합성 입력 시험에서는 보정 좌표 직접 반환, IDW 지수와 엡실론 검사, 보정 잔차만을 활용한 하이브리드 격자, 네 방법의 MAE/RMSE 계산과 동일 색상 범위 적용을 확인하였다. 합성 요약 데이터는 코드 연결 검증에만 활용하며 복도 실측 결과에는 포함하지 않는다.
 
 ### 4.5 복도 실험 설계
 
-복도 실험은 H2와 H3을 검증하기 위한 실험이다. {{실험 공간은 직선 구간과 코너가 공존해 차폐에 따른 신호 변화가 뚜렷하고, 출입 통제가 쉬워 측정 조건을 일정하게 유지할 수 있는 복도로 선정하였다.}} 다섯 ESP32의 공통 위치 편차 보정값을 측정한 뒤 네 장치는 보정 위치에 고정하고 한 장치는 여섯 시험 위치를 순서대로 이동한다. 보정 값은 일반 IDW와 잔차 IDW의 입력으로 사용하고 시험 값은 세 방법의 평가에만 사용한다. 실험 구성은 Table 6과 같으며, 결과 표와 그림의 빈칸은 복도 측정 후 채우고 추정값을 넣지 않는다.
+복도 실험은 H2와 H3을 검증하기 위한 실험이다. 실험 공간은 직선 구간과 코너가 공존하는 부산대학교 4층 복도로 선정하였다. 다섯 ESP32의 공통 위치 편차 보정값을 측정한 뒤 네 장치는 보정 위치에 고정하고 한 장치는 여섯 시험 위치를 순서대로 이동하였다. 보정 값은 일반 IDW, 잔차 IDW와 전역 편향 보정의 입력으로 사용하고 시험 값은 네 방법의 평가에만 사용하였다. 실험 구성은 Table 6과 같다.
 
-**Table 6.** Corridor experiment configuration.
+**Table 6.** 복도 실험 구성.
 
-| Item | Setting |
+| 항목 | 설정 |
 | --- | --- |
-| Site | 4F corridor, Pusan National University |
-| Coordinate system | pnu_4f_corridor, meters, right-handed |
-| Transmitter | 1 dedicated AP |
-| Receivers | 5 ESP32 devices |
-| Fixed calibration receivers | 4 |
-| Moving test receiver | 1 |
-| Common height | 0.45 m |
-| Device-offset measurement | 60 s at a common position |
-| Test measurement | 30 s per position |
-| Representative value | Median of valid filtered RSSI + device offset |
-| Calibration / test points | 4 / 6 |
-| Compared methods | Raw Sionna RT, plain IDW, residual IDW |
+| 장소 | 부산대학교 4층 복도 |
+| 좌표계 | `pnu_4f_corridor`, 미터, 오른손 좌표계 |
+| 송신기 | 전용 AP 1대 |
+| 수신기 | ESP32 5대 |
+| 고정 Calibration 수신기 | 4대 |
+| 이동 Test 수신기 | 1대 |
+| 공통 높이 | 0.45 m |
+| Device Offset 측정 | 공통 위치에서 실행별 30~60초 |
+| Test 측정 | 위치별 약 30초 |
+| 대표값 | 유효 Filtered RSSI 중앙값 + 실행별 Device Offset |
+| Calibration/Test 위치 | 4/6 |
+| 비교 방법 | Raw Sionna RT, Plain IDW, Residual IDW, Global Bias |
 
 복도 도면의 왼쪽 아래 기준점을 원점으로 하고 도면 오른쪽을 +X, 위쪽을 +Y, 바닥 위쪽을 +Z로 정한다. 모든 송신기와 수신기는 z = 0.45 m에 둔다. Fig. 7은 복도의 좌표계와 측정 위치를 나타내며, 송신기·보정 지점과 시험 지점의 좌표는 각각 Table 7, Table 8과 같다.
 
-**Fig. 7.** Coordinate system and measurement positions in the 4F corridor. [TODO: 원점·좌표축·송신기·보정 4지점·시험 6지점을 표시한 복도 도면 작도 후 삽입]
+![Sionna 유효 격자 위에 표시한 복도 송신기, Calibration 및 Test 위치](../../../RFVisualizer/scenes/pnu_4f_corridor/rf_experiment/spreadsheet/doors_glass_100m_d5_tests_1_2/figures/kmms_coordinate_map.png)
 
-**Table 7.** Transmitter and calibration positions.
+**Fig. 7.** 복도 좌표계의 송신기, Calibration 4지점 및 Test 6지점.
 
-| Role | Point ID | X (m) | Y (m) | Z (m) | Device |
+**Table 7.** 송신기 및 Calibration 위치.
+
+| 역할 | 지점 ID | X (m) | Y (m) | Z (m) | 장치 |
 | --- | --- | --- | --- | --- | --- |
-| Transmitter | tx-01 | 3.15 | 0.50 | 0.45 | [TODO: AP] |
-| Calibration | cal-01 | 3.13 | 3.93 | 0.45 | [TODO] |
-| Calibration | cal-02 | 8.08 | 3.93 | 0.45 | [TODO] |
-| Calibration | cal-03 | 10.56 | 10.68 | 0.45 | [TODO] |
-| Calibration | cal-04 | 8.69 | 15.63 | 0.45 | [TODO] |
+| 송신기 | tx-01 | 3.13 | 0.50 | 0.45 | 미기록 |
+| Calibration | cal-01 | 3.13 | 3.93 | 0.45 | gw-01 |
+| Calibration | cal-02 | 8.08 | 3.93 | 0.45 | node-01 |
+| Calibration | cal-03 | 10.56 | 10.68 | 0.45 | node-03 |
+| Calibration | cal-04 | 8.69 | 15.01 | 0.45 | node-04 |
 
-**Table 8.** Test positions and measurement sessions.
+**Table 8.** Test 위치 및 측정 실행.
 
-| Order | Point ID | X (m) | Y (m) | Z (m) | Session |
+| 순서 | 지점 ID | X (m) | Y (m) | Z (m) | 실행 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | test-01 | 0.65 | 3.93 | 0.45 | [TODO] |
-| 2 | test-02 | 5.60 | 3.93 | 0.45 | [TODO] |
-| 3 | test-03 | 10.56 | 3.93 | 0.45 | [TODO] |
-| 4 | test-04 | 6.92 | 11.20 | 0.45 | [TODO] |
-| 5 | test-05 | 6.92 | 15.63 | 0.45 | [TODO] |
-| 6 | test-06 | 10.56 | 15.63 | 0.45 | [TODO] |
+| 1 | test-01 | 0.65 | 3.93 | 0.45 | Test 1·2 |
+| 2 | test-02 | 5.60 | 3.93 | 0.45 | Test 1·2 |
+| 3 | test-03 | 10.56 | 3.93 | 0.45 | Test 1·2 |
+| 4 | test-04 | 6.42 | 11.20 | 0.45 | Test 1·2 |
+| 5 | test-05 | 6.92 | 15.01 | 0.45 | Test 1·2 |
+| 6 | test-06 | 10.56 | 15.01 | 0.45 | Test 1·2 |
 
-실험 전에 AP의 SSID, BSSID, 채널과 송신 설정을 기록한다. 다섯 수신기는 같은 높이와 방향을 유지하고 고정 보정 수신기는 시험 측정이 끝날 때까지 이동하지 않는다. 먼저 다섯 장치를 공통 위치에 놓고 60초간 측정하여 장치 편차 보정값을 계산한다. 이후 네 장치를 보정 위치에 고정하고 이동 장치를 시험 위치에 순서대로 배치하여 각 30초간 측정한다. 표본 부족, 장치 이동, 장시간 차폐 또는 통신 단절이 있으면 현장에서 재측정한다. 실험 환경 기록 항목은 Table 9와 같고, Fig. 8은 현장 배치를 나타낸다.
+다섯 수신기는 같은 높이를 사용하였고, 각 실행 시작 시 공통 위치 측정으로 장치 편차 보정값을 계산하였다. 이후 네 장치를 Calibration 위치에 고정하고 `node-02`를 여섯 Test 위치에 순서대로 배치하여 각 약 30초간 측정하였다. 원본 Backend Export에는 BSSID, 채널, 장치 방향과 세부 현장 상태가 기록되지 않았으며, 좌표와 Calibration/Test 역할도 누락되어 기존 장치 배치 계약으로 복원하였다. 확인 가능한 실험 환경과 누락 항목은 Table 9와 같다.
 
-**Table 9.** Field conditions of the corridor experiment.
+**Table 9.** 복도 실험 환경과 기록 상태.
 
-| Item | Value |
+| 항목 | 값 |
 | --- | --- |
-| Experiment ID | pnu_4f_corridor_[TODO] |
-| Date and time | [TODO] |
-| AP model | [TODO] |
-| SSID / BSSID | [TODO] |
-| Channel / center frequency | [TODO] |
-| TX power setting | [TODO] |
-| Receiver orientation | [TODO] |
-| Door / elevator states | [TODO] |
-| Traffic and notes | [TODO] |
-| Software / firmware versions | [TODO] |
-
-**Fig. 8.** On-site arrangement of the transmitter and RSSI receivers. [TODO: 현장 사진 촬영 후 삽입]
+| Experiment ID | `Test_1_004838`, `Test_2_010416` |
+| 측정·Export 날짜 | 2026-07-27 |
+| AP 모델 | 미기록 |
+| SSID/BSSID | 원본에 미기록 |
+| 채널/중심 주파수 | 채널 미기록, 분석 주파수 2.4 GHz |
+| 실제 TX 출력 설정 | 미기록, Sionna 설정은 20 dBm |
+| 수신기 방향 | 미기록 |
+| 문·엘리베이터 상태 | Test 1·2는 Proxy와 일치한 것으로 현장 기록, 세부 상태는 원본에 미기록 |
+| 통행 및 특이사항 | 미기록 |
+| 분석 환경 | Sionna RT 1.2.2, Mitsuba 3.8.0, Dr.Jit 1.3.1 |
 
 ### 4.6 복도 실험 결과
 
-공통 위치 측정과 장치 편차 보정값은 Table 10과 같다. 보정 전 중앙값 범위는 [TODO: 값] dB였고 보정값 적용 후 범위는 [TODO: 값] dB로 나타났다. 가장 큰 절대 보정값은 [TODO: 값] dB로 [TODO: 노드 ID]에서 나타났다. 이에 따라 H2는 [TODO: 지지/부분 지지/기각]로 판단한다.
+공통 위치에서 계산한 장치 편차 보정값은 Table 10과 같다. Test 1에서는 보정 전 장치 중앙값 범위가 14.0 dB에서 0.0 dB로, Test 2에서는 19.0 dB에서 0.0 dB로 감소하였다. 그러나 두 실행에서 계산한 장치별 Offset의 절대 차이는 평균 5.9 dB, 최대 15.0 dB였으며 `node-01`에서 가장 크게 나타났다. 같은 공통 위치 측정에서 값을 정렬하는 효과는 확인했지만 반복 실행 사이의 안정성은 확인하지 못했으므로 H2는 부분 지지로 판단한다.
 
-**Table 10.** Common-position measurements and device offsets.
+**Table 10.** 두 실행의 공통 위치 중앙값과 Device Offset.
 
-| Node | Valid samples | Median (dBm) | Std. (dB) | Offset (dB) | Corrected median (dBm) |
+| 장치 | Test 1 중앙값 (dBm) | Test 1 Offset (dB) | Test 2 중앙값 (dBm) | Test 2 Offset (dB) | Offset 차이 (dB) |
 | --- | --- | --- | --- | --- | --- |
-| [TODO] | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| [TODO] | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| [TODO] | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| [TODO] | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| [TODO] | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
+| `gw-01` | -42.0 | +7.0 | -40.0 | +5.0 | 2.0 |
+| `node-01` | -36.0 | +1.0 | -21.0 | -14.0 | 15.0 |
+| `node-02` | -28.0 | -7.0 | -33.0 | -2.0 | 5.0 |
+| `node-03` | -30.0 | -5.0 | -35.0 | 0.0 | 5.0 |
+| `node-04` | -35.0 | 0.0 | -37.5 | +2.5 | 2.5 |
 
-데이터 품질 검사 결과는 Table 11과 같다. 품질 기준을 만족하지 못한 세션은 [TODO: 없음 또는 세션 ID와 처리]이며 최종 분석에는 [TODO: 채택 기준]만 사용한다.
+데이터 품질 검사 결과는 Table 11과 같다. Test 위치의 유효 표본 수는 위치당 25~30개로 최소 기준을 만족했다. 반면 원본 Export의 BSSID·채널과 좌표가 누락되어 원본 QC는 실패하였다. 분석에서는 원시 측정 CSV를 보존한 채 기존 배치 계약으로 4개 Calibration과 6개 Test 위치를 복원했으며, Test 값은 지표 계산에만 사용하였다.
 
-**Table 11.** Data quality checks.
+**Table 11.** 데이터 품질 검사 결과.
 
-| Check | Criterion | Result | Verdict |
+| 검사 | 기준 | 결과 | 판정 |
 | --- | --- | --- | --- |
-| Device offsets | Computed for all 5 devices | [TODO] | [TODO] |
-| Calibration points | 4 positions | [TODO] | [TODO] |
-| Test points | 6 positions | [TODO] | [TODO] |
-| Valid samples per test | Target 25-30, min. 18 | [TODO] | [TODO] |
-| BSSID | Fixed to one | [TODO] | [TODO] |
-| Channel | Fixed during the experiment | [TODO] | [TODO] |
-| Missing coordinates | 0 | [TODO] | [TODO] |
-| Raw preservation | JSONL and SQLite backups | [TODO] | [TODO] |
-| CSV contract | Raw and summary checks passed | [TODO] | [TODO] |
+| Device Offset | 실행별 5대 모두 계산 | 두 실행 모두 5대 계산 | 통과, 반복 안정성은 미확보 |
+| Calibration 위치 | 4개 | 복원 후 4개 | 부분 통과 |
+| Test 위치 | 6개 | 복원 후 6개 | 부분 통과 |
+| Test 유효 표본 | 위치당 최소 18개 | 25~30개 | 통과 |
+| BSSID | 단일 BSSID 확인 | 원본 전체 미기록 | 실패 |
+| 채널 | 실험 중 고정 확인 | 원본 전체 미기록 | 실패 |
+| 좌표 누락 | 0개 | 원본 누락, 복원 후 0개 | 부분 통과 |
+| 원시 데이터 보존 | 재분석 가능한 원본 | Raw CSV 보존, JSONL·SQLite 미확인 | 부분 통과 |
+| CSV 계약 | 역할·좌표·RSSI 검사 | 원본 QC 실패, 복원 분석 입력 통과 | 부분 통과 |
 
-시험 위치에서의 방법별 예측 오차는 Table 12와 같고, 위치별 실측값과 예측값은 Table 13과 같다. 일반 IDW 대비 잔차 IDW의 MAE 개선율은 [TODO: 값]%, RMSE 개선율은 [TODO: 값]%로 나타났다. 이에 따라 H3은 [TODO: 실측 결과에 따른 판정]로 판단한다.
+시험 위치에서의 방법별 예측 오차는 Table 12와 같고, 위치별 실측값과 예측값은 Table 13과 같다. Plain IDW 대비 Residual IDW의 MAE 개선율은 22.62%, RMSE 개선율은 21.83%로 나타났다. 따라서 H3은 6개 독립 Test 위치의 예비 평가 범위에서 지지된다. 다만 네 방법 중 가장 낮은 오차는 공간 보간을 사용하지 않은 Global Bias에서 나타났다.
 
-**Table 12.** Prediction errors per method at the corridor test positions.
+**Table 12.** 복도 Test 위치의 방법별 예측 오차.
 
-| Method | MAE (dB) | RMSE (dB) | ME (dB) | Max. abs. error (dB) |
+| 방법 | MAE (dB) | RMSE (dB) | ME (dB) | 최대 절대오차 (dB) |
 | --- | --- | --- | --- | --- |
-| Raw Sionna RT | [TODO] | [TODO] | [TODO] | [TODO] |
-| Plain IDW | [TODO] | [TODO] | [TODO] | [TODO] |
-| Sionna RT + residual IDW | [TODO] | [TODO] | [TODO] | [TODO] |
+| Raw Sionna RT | 14.90 | 15.54 | 14.90 | 20.98 |
+| Plain IDW | 13.05 | 16.22 | 13.05 | 26.64 |
+| Sionna RT + Residual IDW | 10.10 | 12.68 | 10.10 | 21.41 |
+| Sionna RT + Global Bias | **7.48** | **8.58** | **7.37** | **13.45** |
 
-**Table 13.** Measured and predicted RSSI per test position.
+**Table 13.** Test 위치별 실측 및 예측 RSSI.
 
-| Point | Measured | Raw Sionna | Plain IDW | Residual IDW | Best method |
+| 지점 | 실측 (dBm) | Raw Sionna | Plain IDW | Residual IDW | Global Bias | 최소오차 방법 |
 | --- | --- | --- | --- | --- | --- |
-| test-01 | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| test-02 | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| test-03 | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| test-04 | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| test-05 | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
-| test-06 | [TODO] | [TODO] | [TODO] | [TODO] | [TODO] |
+| test-01 | -41.50 | -29.77 | -27.91 | -27.75 | -37.30 | Global Bias |
+| test-02 | -38.00 | -30.80 | -37.13 | -37.06 | -38.33 | Global Bias |
+| test-03 | -49.00 | -32.87 | -46.97 | -47.51 | -40.41 | Residual IDW |
+| test-04 | -58.00 | -42.27 | -45.86 | -51.43 | -49.81 | Residual IDW |
+| test-05 | -66.50 | -45.52 | -39.86 | -45.09 | -53.05 | Global Bias |
+| test-06 | -64.25 | -46.62 | -41.20 | -47.80 | -54.16 | Global Bias |
 
-**Fig. 9.** Measured RSSI versus predicted values at the corridor test positions. [TODO: y=x 기준선 산점도 작성 후 삽입]
+![복도 Test 위치의 실측 RSSI와 네 방법 예측값 비교](../../../RFVisualizer/scenes/pnu_4f_corridor/rf_experiment/spreadsheet/doors_glass_100m_d5_tests_1_2/figures/kmms_prediction_comparison.png)
 
-**Fig. 10.** Corridor RSSI fields estimated by the three methods. [TODO: 동일 색상 범위의 방법별 지도 작성 후 삽입]
+**Fig. 8.** 복도 Test 위치에서 실측 RSSI와 네 방법 예측값의 비교.
 
-Sionna RT 원시 예측의 MAE와 RMSE는 각각 [TODO: 값] dB와 [TODO: 값] dB로 나타났다. [TODO: 평균 오차 기준 과대/과소 추정 서술]. 이는 [TODO: 송신 출력·재질·기하 관련 원인]과 관련된 것으로 해석한다. 일반 IDW의 MAE와 RMSE는 각각 [TODO: 값] dB와 [TODO: 값] dB로 나타났다. 보정 지점과 가까운 [TODO: 지점 ID]에서는 [TODO: 관찰]한 반면, 벽 또는 코너를 사이에 둔 [TODO: 지점 ID]에서는 [TODO: 관찰]하였다. 이는 IDW가 유클리드 거리를 사용하고 차폐 구조를 직접 반영하지 않는 특성과 관련된다. 잔차 IDW의 MAE와 RMSE는 각각 [TODO: 값] dB와 [TODO: 값] dB로 나타났다. 일반 IDW와 비교하여 [TODO: 개선/악화]되었으며 가장 큰 차이는 [TODO: 지점과 오차 차이]에서 나타났다. Sionna RT의 공간적 분포가 실제 복도 구조와 일치한 영역과 기하 또는 재질 오차가 큰 영역을 나누어 해석한다.
+![동일한 색상 범위를 사용한 네 방법의 복도 RF 지도](../../../RFVisualizer/scenes/pnu_4f_corridor/rf_experiment/spreadsheet/doors_glass_100m_d5_tests_1_2/figures/kmms_method_maps.png)
+
+**Fig. 9.** 동일한 -90~-20 dBm 색상 범위에서 비교한 네 방법의 복도 RF 지도.
+
+Raw Sionna RT의 MAE와 RMSE는 각각 14.90 dB와 15.54 dB였고 ME가 +14.90 dB로 나타나 여섯 위치를 전반적으로 과대 예측하였다. Plain IDW는 MAE 13.05 dB, RMSE 16.22 dB였으며 `test-03`에서는 절대오차가 2.03 dB로 작았지만, Calibration 위치에서 먼 `test-05`와 `test-06`에서는 각각 26.64 dB와 23.05 dB로 커졌다. Residual IDW는 MAE 10.10 dB, RMSE 12.68 dB로 감소했으며, Plain IDW 대비 가장 큰 개선은 `test-06`의 6.25 dB였다. 반면 `test-01`과 `test-02`에서는 각각 0.16 dB와 0.07 dB 악화되어 모든 위치에서 일관된 개선은 아니었다. Global Bias는 MAE 7.48 dB와 RMSE 8.58 dB로 가장 낮았으며, 네 개 Calibration만 사용한 본 실험에서는 공간 잔차 보간보다 전역 편향 보정이 더 안정적이었다.
 
 ### 4.7 고찰 및 한계
 
 본 연구에서는 시각화와 전파 계산을 하나의 표현에 강제로 통합하지 않고 Gaussian과 메시의 역할을 분리하였다. 동일 장면을 두 번 관리해야 한다는 비용이 있지만 기존 3DGS 렌더러와 검증된 삼각형 기반 전파 계산기를 각각 활용할 수 있다. 합성 차폐판 시험에서 직접 경로와 커버리지가 수치 재현성 오차보다 크게 바뀐 결과는 프록시 계층이 실제 전파 계산에 참여함을 보여 준다. 다만 합성 장면에서 변화가 발생했다는 사실과 실제 환경의 RSSI를 정확히 예측한다는 주장은 구분해야 한다.
 
-Sionna RT 원시 예측은 공간 기하를 사용하지만 실제 재질과 장치의 불확실성에 민감하고, 일반 IDW는 실측값을 직접 사용하지만 벽과 코너를 고려하지 않는다. 잔차 IDW는 Sionna RT의 공간 분포 위에 실측된 지역 편향을 더한다. 복도 결과가 오차 감소를 보이면 제한된 측정점이 시뮬레이션의 지역 편향을 보완했음을 의미한다. 개선되지 않으면 시뮬레이션의 공간적 형태가 실제 환경과 충분히 일치하지 않거나 보정 지점이 잔차장을 대표하지 못한 것으로 해석할 수 있다.
+Sionna RT 원시 예측은 공간 기하를 사용했지만 실제 재질, 송신 출력과 장치 특성의 불확실성으로 모든 Test 위치에서 실측보다 높은 RSSI를 예측하였다. Residual IDW가 Plain IDW보다 낮은 평균 오차를 보인 결과는 시뮬레이션의 공간 분포가 일부 위치의 잔차 보정에 도움을 주었음을 의미한다. 그러나 Global Bias가 가장 낮은 오차를 보였다는 점은 네 개 Calibration만으로 공간 잔차장을 안정적으로 추정하기 어려웠음을 보여 준다. 따라서 본 결과를 Residual IDW의 일반적 우월성으로 해석하지 않고, 보정 위치 수와 배치에 따른 민감도를 후속 검증 과제로 둔다.
 
 다중 장치 실험에서는 알고리즘뿐 아니라 측정 조건의 통제가 결과의 신뢰도를 결정한다. 장치 편차 보정값, BSSID, 채널, 지점 배치와 무효 사유를 원본과 함께 보존해야 대표값 계산 방법이 바뀌어도 다시 분석할 수 있다. 자동시험은 데이터 처리의 결정론적 부분을 검증하지만 실제 ESP-NOW 충돌, UART 잡음, 브로커 단절과 장시간 안정성을 직접 측정하지 않는다.
 
-본 연구의 주요 한계는 시험 위치가 6개이고 모든 측정 높이가 0.45 m라는 점, 보정과 시험의 관측 시간이 다르다는 점, 문과 엘리베이터 및 사람 이동을 완전히 통제할 수 없다는 점, Sionna 재질이 실제 복도 재질의 전자기 측정값이 아니라는 점이다. 또한 ESP32의 RSSI는 전문 채널 사운더를 대체하지 않으며, 단일 날짜 측정으로는 시간대와 날짜 변화의 재현성을 평가할 수 없다. 본 논문의 시각화 계층은 전파 분포 파일 생성까지를 다루고 SIBR 실시간 합성의 프레임률과 지연은 평가하지 않는다.
+본 연구의 주요 한계는 시험 위치가 6개이고 모든 측정 높이가 0.45 m라는 점, 두 반복의 Test RSSI 차이가 평균 6.08 dB이고 최대 13.00 dB였다는 점, 장치 Offset의 실행 간 차이가 평균 5.9 dB였다는 점이다. 또한 원본 Backend Export에는 좌표, Calibration/Test 역할, BSSID와 채널이 완전하게 기록되지 않아 기존 장치 배치 계약으로 분석 입력을 복원하였다. 문과 엘리베이터 및 사람 이동을 완전히 통제하지 못했고, Sionna 장면과 재질 계수도 잠정값이며 실측 TX와 Sionna TX의 X 좌표에는 0.02 m 차이가 있다. ESP32의 RSSI는 전문 채널 사운더를 대체하지 않으며, 현재 두 반복만으로 날짜와 시간대 변화의 재현성을 평가할 수 없다. 본 논문의 시각화 계층은 전파 분포 파일 생성까지를 다루고 SIBR 실시간 합성의 프레임률과 지연은 평가하지 않는다.
 
 ## 5. 결론 및 향후 연구
 
 본 연구에서는 사진 기반으로 재구성한 실내 3D Gaussian Splatting 장면, 삼각형 메시 기반 Sionna RT 전파 시뮬레이션과 다중 ESP32 RSSI 측정을 연결하는 무선 신호 분포 추정 파이프라인을 제안하였다. 시각화용 Gaussian과 전파 계산용 프록시 메시를 분리하고 미터 변환과 공통 기준점을 통해 정합하였다. 실측 RSSI는 ESP32, ESP-NOW 게이트웨이, STM32와 MQTT 백엔드를 통해 수집하고 공통 위치 측정으로 장치별 편차를 보정하였다.
 
-개발용 장면의 기능 검증에서 합성 차폐판은 설정한 가시선을 제거하고 공통 유효 커버리지 셀에서 최대 8.426 dB의 변화를 발생시켰다. 기준 장면의 반복 변화가 약 5.20×10^-6 dB였던 것과 비교하면 기하 변경이 전파 계산 결과에 반영되었음을 확인할 수 있다. 백엔드의 19개 시험과 STM32 호스트 구문 분석 시험도 통과하여 장치 측정값을 보존하고 분석 입력으로 변환하는 경로를 검증하였다. 복도 실험에서 Sionna RT 원시 예측, 일반 IDW와 잔차 IDW의 MAE는 각각 [TODO: 값] dB였으며 RMSE는 각각 [TODO: 값] dB로 나타났다. [TODO: 핵심 결과와 H2·H3 판정 요약].
+개발용 장면의 기능 검증에서 합성 차폐판은 설정한 가시선을 제거하고 공통 유효 커버리지 셀에서 최대 8.426 dB의 변화를 발생시켰다. 기준 장면의 반복 변화가 약 5.20×10^-6 dB였던 것과 비교하면 기하 변경이 전파 계산 결과에 반영되었음을 확인할 수 있다. 백엔드의 19개 시험과 STM32 호스트 구문 분석 시험도 통과하여 장치 측정값을 보존하고 분석 입력으로 변환하는 경로를 검증하였다. 복도 예비 평가에서 Raw Sionna RT, Plain IDW, Residual IDW와 Global Bias의 MAE는 각각 14.90, 13.05, 10.10, 7.48 dB였고 RMSE는 각각 15.54, 16.22, 12.68, 8.58 dB였다. 실행 내부의 Device Offset 정렬은 확인했지만 실행 간 안정성은 확인하지 못해 H2는 부분 지지로 판단하였다. Residual IDW가 Plain IDW보다 MAE와 RMSE를 각각 22.62%와 21.83% 줄여 H3은 예비 평가 범위에서 지지되었지만, 가장 낮은 오차는 Global Bias에서 나타났다.
 
 본 연구의 결과는 제한된 수의 복도 시험 위치와 단일 높이에서 진행한 예비 검증이다. 따라서 특정 결합 방법의 일반적인 우수성을 주장하기보다, 사진 기반 장면의 기하, 전파 광선 추적과 실제 RSSI를 동일 좌표에서 비교할 수 있는 재현 가능한 기반을 마련했다는 데 의미가 있다. 향후 연구로는 다음을 계획한다. 복도 측정을 다른 날짜와 높이에서 반복하고 보정 위치 수와 배치의 민감도를 비교한다. 또한 기하와 좌표를 먼저 검증한 뒤 전역 편차, 송신 출력 또는 소수의 재질 파라미터를 보정하는 방법을 검토하며, 시각화 계층에서는 SIBR Viewer에 단일 높이 전파 지도를 합성하고 PGSR 메시 깊이를 활용해 벽 뒤 히트맵을 가리는 방법을 평가한다.
 
