@@ -46,7 +46,8 @@ Broker 없이 단위 테스트 가능. 호환 필드:
 | Channel | `ap_channel`, `channel` |
 | Error | `error_flags`, `status` |
 
-`rssi`=Filtered dBm, `rssi_raw`=Raw dBm. 유효 범위 `-100 ≤ RSSI ≤ -10`.
+`rssi`=Filtered dBm, `rssi_raw`=Raw dBm. 실제 MQTT 경로의 유효 범위는 `-110 ≤ RSSI ≤ -10`이다.
+단, 독립 `ParseConfig()` 기본값은 아직 `-100 dBm`이므로 런타임 설정과 통일해야 한다.
 구조 손상 메시지만 버리고, 값이 비정상이면 `valid=false, invalid_reason`으로 보존(분석에서만 제외).
 Node/Server 시각 차가 허용 범위를 크게 벗어나면 Server 수신 시각으로 교체.
 
@@ -186,10 +187,11 @@ py rehearsal.py --reverse         # 사전·사후 offset + 정+역 in-process �
 
 ## 16. 현재 구현 상태
 
-- **로직 검증 완료**: 마이그레이션·상태관리·MQTT 저장 분기·시간매칭·사전사후 offset·Export/QC (테스트 20+/20+).
+- **로직 검증 완료**: 마이그레이션·상태관리·MQTT 저장 분기·시간매칭·사전사후 offset·Export/QC (현재 테스트 49개 통과).
 - **실물 확인 완료**: MQTT 수신(브로커+load_test+백엔드), 새 UI 로드.
 - **미검증**: 실센서 5대 정방향 전체 리허설, 브라우저 새로고침/MQTT 재연결/Backend 중단의 실동작.
-- **미구현**(졸업작품): 실제 Position 추정, Handheld, JPEG Streaming, 실시간 Viewer 통합.
+- **별도 구현·검증 완료**: RFJF 22-byte Frame 기반 `image_relay`와 Host Test 8개.
+- **미구현·미통합**: 실제 Position 추정, Graphics JPEG producer, Handheld 실기기 연결, 실시간 Viewer 통합.
 
 ## 17. 공통 계약
 

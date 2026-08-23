@@ -1,220 +1,155 @@
 # RFVisualizer 현재 진행 상태
 
-- 기준일: **2026-08-04**
-- 기준 Branch: 세 저장소의 `main`
+- 기준일: **2026-08-23**
+- 기준: 각 저장소 `main`과 `/data/RFVisualizer_Workspace`의 최신 실험 산출물
 
-## 1. 전체 요약
+## 1. 한 줄 요약
 
-- **그래픽스:** PGSR 장면, 닫힌 Proxy Room, 미터 단위 보정, Sionna RT 연결, Proxy 장애물 편집을 구현했다. 실제 복도 측정값을 이용한 잠정 RF 분석까지 연결했으며, 최종 Viewer는 남아 있다.
-- **임베디드:** `gw-01`과 `node-01~04`를 포함한 실물 Node 5대를 측정했다. Device Offset도 산출했지만 반복 안정성이 낮아 최종 보정값으로 확정하지 않았다.
-- **네트워크:** Backend Export는 완료했다. 다만 원본 Export의 좌표와 Calibration/Test 역할에 오류·누락이 있어 복원 코드를 적용했으며, 좌표 포함 원본 Export는 아직 미완료다.
-- **통합:** 실제 Experiment는 PNU 4층 복도의 `doors_glass_diffraction_scattering_authored_100m_d5` 조건으로 선택했다. Test 1·2를 사용한 잠정 분석은 가능하지만, 최종 논문용 데이터로는 재측정이 권장된다.
+3층 복도 장면·RF 분석과 JPEG 중계/수신 프로토타입까지 구현했지만, 8월 21일 측정은 정방향 2구간이 빠진 **부분 데이터**이며 장면도 잠정 상태라 아직 최종 논문 근거로 사용할 수 없다.
 
-## 2. 완료 상태
+## 2. 핵심 상태
 
-| 영역 | 상태 |
-|---|---|
-| PGSR Gaussian Scene | 구현·실행 완료 |
-| Room Envelope | 구현·검증 완료 |
-| Metric Calibration | 구현·검증 완료 |
-| Sionna RT Phase 2-A | 구현·검증 완료 |
-| Proxy 장애물 Phase 2-B | 구현·검증 완료 |
-| Proxy Placement Editor Phase 2-C | 구현 완료 |
-| RF 실험 분석 도구 | 구현·잠정 분석 완료 |
-| SIBR Heatmap Viewer | 다음 단계 |
-| ESP32 RSSI Node | 구현 완료, 실물 5대 측정 완료 |
-| ESP32 Gateway + Local Node 5 | 구현 완료, 실물 5대 측정 완료 |
-| STM32 수신·전처리 | 구현·기본 검증 완료 |
-| Serial-MQTT Bridge | 구현·기본 연결 완료 |
-| 실제 Experiment 선택 | 완료 — PNU 4층 복도 Test 1·2 |
-| 실물 Node 3대 이상 측정 | 완료 — 5대 |
-| Device Offset 측정 | 완료, 반복 안정성 낮음 |
-| 핸드헬드 IMU·버튼 | 계획 |
-| JPEG·LCD | 계획 |
-| Backend Export | 완료 |
-| 좌표 포함 Export | 미완료 |
-| Calibration/Test 역할 | 원본 오류, 복원 코드 구현 |
-| 실측 RF 분석 | 잠정 분석 가능 |
-| 최종 논문용 데이터 | 재측정 권장 |
-| 실시간 Frame/WebSocket | 인터페이스 구현, 기본 비활성 |
-| PositionEstimate | 인터페이스만 준비 |
+| 항목 | 현재 상태 | 판단 |
+|---|---|---|
+| 3층 복도 PGSR·Proxy Scene | 구현·로컬 검증 완료 | 장면 정밀도는 추가 보정 필요 |
+| 3층 Marker 배치 | `ready` | TX 1, Calibration 4, Test 10 |
+| 3층 Sionna RT | `depth12` 실행 성공 | Scene/Solver 잠정, 논문 근거 불가 |
+| RF Experiment Framework | 구현·테스트 완료 | 동시간 Calibration 매칭 지원 |
+| 2026-08-21 Lounge 측정 | 분석 가능 | 정방향 8 + 역방향 10 = 18구간 |
+| 엄격한 10×2 계약 | 미충족 | 정방향 Test 1·2 누락 |
+| Network Backend | Export/QC/복구 로직 검증 | 실센서 전체 리허설은 미검증 |
+| JPEG Image Relay | 구현·테스트 완료 | 실제 Graphics→Handheld 종단 미검증 |
+| Handheld JPEG·LCD | 독립 프로토타입 구현 | 실제 장치 통합·성능 미검증 |
+| Handheld BNO085 | 독립 시험 코드 구현 | 실제 성공 기록·통합 미확인 |
+| SIBR Heatmap Viewer | 미구현 | Graphics JPEG producer도 미구현 |
+| 최종 논문용 데이터 | 미확정 | `paper_evidence_eligible=false` |
 
-## 3. 그래픽스
+## 3. 최신 RF 실험 결과
 
-### 완료
+기준 산출물은 `experiments/0821_lounge_201729`이다. 원본 측정값은 수정하지 않았고, 분석 가능한 18개 Test Segment만 사용했다.
 
-- PGSR Gaussian Scene과 Surface Mesh
-- Plane/Wall 후보 추출
-- 평면 교점 기반 Room Envelope
-- 양방향 Metric Transform
-- Sionna Empty Room
-- 동일 설정의 Obstacle A/B
-- Proxy Placement Editor
-- Point Cloud/Room/Mesh 독립 표시
-- Box·Thin Panel과 Material Metadata
+### 데이터 범위
 
-### 다음 작업
-
-- 원본 Backend Export에 좌표와 Calibration/Test 역할을 포함하도록 수정
-- 복원 코드가 아닌 원본 Export 기준으로 동일한 RF 분석을 재실행
-- Device Offset과 Calibration 반복 안정성 재측정
-- 잠정 분석의 `paper_evidence_eligible=false` 원인을 해소한 뒤 최종 지표 확정
-- SIBR Heatmap Viewer 구현
-
-### 최신 잠정 분석
-
-기준 결과는 `PNU 4층 복도 / doors-glass / diffraction+authored scattering / 100m_d5`이며 Test 1·2만 사용했다. Test 3은 철문 상태가 Proxy와 달라 제외했다.
-
-| 항목 | 현재 값 |
+| 항목 | 값 |
 |---|---:|
-| 실측 Node | 5대: `gw-01`, `node-01~04` |
-| Calibration 위치 | 4개 |
-| Test 위치 | 6개 독립 위치, Test 1·2 반복 |
-| Raw Sionna MAE / RMSE | 14.90 / 15.54 dB |
-| 전역 보정 후 MAE / RMSE | 7.48 / 8.58 dB |
-| Pearson r | 0.970 |
-| Calibration 반복 차이 | 평균 10.25 dB, 최대 16.00 dB |
-| Test 반복 차이 | 평균 6.08 dB, 최대 13.00 dB |
-| 논문 근거 사용 가능 여부 | 불가 (`paper_evidence_eligible=false`) |
+| 정방향 Test Segment | 8개 — Test 1·2 누락 |
+| 역방향 Test Segment | 10개 |
+| 전체 Test Segment | 18개 |
+| 동시간 Calibration Window | 72개 — Segment당 C1~C4 |
+| BSSID가 비어 있는 Raw Row | 19,648개 전체 |
 
-현재 결과는 공간적 경향을 보는 잠정 분석으로만 사용한다. 개별 위치의 절대 RSSI 정확도와 재질·좌표의 최종 타당성은 재측정 뒤 다시 판정한다.
+### 결과
 
-근거 산출물: `RFVisualizer/output/spreadsheet/pnu_4f_corridor_doors_glass_100m_d5_tests_1_2/RESULTS_SUMMARY.md`, `processed/analysis_report.json`
+| 방식 | MAE | RMSE |
+|---|---:|---:|
+| Raw Sionna RT | 7.92 dB | 9.66 dB |
+| Plain IDW | 5.47 dB | 7.28 dB |
+| Sionna RT + Residual IDW | 3.52 dB | 4.89 dB |
 
-### 아직 미구현
+정·역방향에서 공통으로 측정된 8개 위치의 반복 차이는 평균 4.13 dB, 최대 10.00 dB이다. Reverse Test 7은 샘플이 68개로 기본 기대치 72개보다 적다.
 
-- SIBR Heatmap
-- Mesh Depth-only Pass
-- Offscreen 800×480
-- IMU Pose
-- Position Update
-- JPEG Streaming
+### 판정
 
-## 4. 임베디드
+- `usable_for_analysis=true`: 부분 데이터 분석은 가능하다.
+- `strict_contract_complete=false`: 정방향 10개가 모두 없어 최종 계약은 미충족이다.
+- `paper_evidence_eligible=false`: 3층 Scene/Solver가 잠정이고 현장 형상·재질 검증이 남아 있다.
+- 사후 Offset이 없으므로 장시간 Drift를 검증할 수 없다.
 
-### 완료 또는 기본 검증
+기존 PNU 4층 결과는 파이프라인 검증용 **Pilot**으로만 유지하며, 3층 최종 결과와 한 표에 섞지 않는다.
 
-- 실물 Node 5대 RSSI 측정: `gw-01`, `node-01~04`
-- Moving Average 5
-- ESP-NOW + CRC32
-- Gateway Node Table
-- Local Node 5
-- UART Line Protocol
-- STM32 Ring Buffer·Parser·Timeout
-- MQTT-ready JSON
-- Python Bridge
-- `rssi/<node_id>`
-- LWT/Heartbeat
-- Device Offset 산출
+## 4. 파트별 진행 상태
 
-### 실물 검증 필요
+### 그래픽스
 
-- Device Offset 반복 안정성
-- Calibration 위치 반복 안정성
-- ESP32 3~5대 동시 측정의 재현성
-- Broadcast/Unicast 비교
-- BSSID 고정
-- 채널 고정
-- 1~2시간 연속 동작
-- Fault Injection
-- 장치별 Offset 재측정·안정성 확인
-- Raw/Filtered 의미와 배율 확인
+완료 또는 로컬 검증:
 
-### 미구현
+- 3층 복도 PGSR Gaussian/Surface Mesh와 Metric Scene
+- Proxy Envelope, Marker 배치, Sionna `depth12` 실행
+- Backend Export 입력, 동시간 Calibration 매칭, Sionna/IDW/Residual 비교
+- RF 분석 테스트 32개와 Sionna/Proxy 도구 테스트 242개 통과, 1개 건너뜀
 
-- ESP32-S3 Handheld
-- IMU와 버튼
-- UDP Quaternion
-- TCP JPEG
-- NT35510 LCD
+남은 작업:
 
-## 5. 네트워크
+- 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정
+- 장면 좌표 오차(현재 계획도 기반 약 ±0.5 m)와 Scale 재검증
+- SIBR Heatmap, Depth Pass, Offscreen 800×480, JPEG producer 구현
 
-### 완료
+### 임베디드
 
-- MQTT 구독과 Parser
-- Raw/Filtered Alias
-- x10 Scale
-- Invalid Sample 보존
-- Timestamp Skew
-- Sequence Loss
-- Experiment/Session/Assignment
-- Device Offset
-- SQLite/JSONL
-- CSV/JSON Export
-- QC
-- Rehearsal
+완료 또는 로컬 검증:
 
-### 현재 제한
+- ESP32 RSSI Node/Gateway, STM32 Parser, Serial-MQTT Bridge
+- RSSI 허용 하한 `-110 dBm`과 AP Channel 기본값 6 반영
+- Bridge Python 테스트 8개, STM32 Parser Host Test, JPEG Protocol Host Test 4개 통과
+- BNO085, NT35510 LCD, JPEG TCP 수신·디코드의 독립 프로토타입 코드 존재
 
-- Backend 원본 Export의 좌표 열이 완성되지 않아 좌표는 복원 코드로 보완했다.
-- 원본 데이터의 Calibration/Test 역할이 잘못되거나 누락되어 복원 코드를 적용했다.
-- 따라서 현재 RF 분석은 Export 원본만으로 재현되는 최종 결과가 아니라 잠정 결과다.
+실물 검증 필요:
 
-### 현재 기본 모드
+- RSSI 장치 3~5대 정·역방향 전체 리허설과 1~2시간 안정성
+- 고정 BSSID/Channel, 사전·사후 Device Offset, Fault Injection
+- BNO085 + 버튼 + JPEG + LCD의 단일 Handheld 통합
+- 실제 ESP32-S3에서 800×480 수신·디코드·표시 속도
 
-```env
-ENABLE_REALTIME=false
+### 네트워크
+
+완료 또는 로컬 검증:
+
+- Run/Segment, 사전·사후 Offset, SQLite/JSONL, Export/QC, 동시간 매칭
+- 런타임 RSSI 허용 하한 `-110 dBm`
+- 현재 테스트 49개 통과
+- 별도 `image_relay` 프로세스와 RFJF 22-byte Frame 중계 테스트 8개 통과
+
+현재 제한:
+
+- 실센서 5대 전체 리허설과 재시작/재연결 실제 동작은 미검증이다.
+- `backend/parsing.py`의 독립 `ParseConfig()` 기본값은 아직 `-100 dBm`이고, 실제 MQTT 경로는 `Settings(-110)`을 전달한다. 두 기본값을 맞춰야 한다.
+- Image Relay는 독립 시험까지 완료했지만 Graphics producer와 실제 Handheld를 함께 연결하지 않았다.
+
+## 5. 공통 계약과 통합 상태
+
+### JPEG Frame 기준 구현
+
+Network Relay와 Embedded 수신 프로토타입은 다음 기준을 공유한다.
+
+```text
+Graphics ─TCP 9101─▶ Image Relay ─TCP 9102─▶ Handheld
+22-byte big-endian header + JPEG payload
+magic='RFJF', version=1, flags=0, seq, ts_ms, length
+payload 최대 8 MiB
 ```
 
-### 인터페이스만 구현
+이 규격의 코드·Host Test는 있으나 실제 Graphics sender가 없어 전체 통합 완료로 보지 않는다. `flags=1` RGB332+zlib 경로는 실험용이며 공통 JPEG 계약에 포함하지 않는다.
 
-- 200 ms Window
-- `WS /frames`
-- Missing Node
-- `GET /position/latest`
+### 좌표 관리
 
-Position은 현재 `null`, confidence는 `0.0`이다.
+- 고정 Calibration Node는 각 저장소의 최신 좌표를 사용한다.
+- 이동 Node `node-02`의 `(0,0,0)`은 의도된 Placeholder다.
+- Test 위치는 전역 `node_positions.json`이 아니라 Backend Experiment Assignment로 관리한다.
+- 실험마다 Frame ID, 단위, 원점, 축, Transform, TX/RX 높이를 기록한다.
 
-## 6. 통합 시 해결할 항목
+## 6. 현재 위험
 
-### 실제 Experiment 선택 완료
-
-현재 기준 Experiment는 다음으로 고정한다.
-
-- 장소: PNU 4층 복도
-- 장면 조건: `doors_glass_diffraction_scattering_authored_100m_d5`
-- 사용 반복: `Test_1_004838`, `Test_2_010416`
-- 제외 반복: `Test_3_011702` — 철문 상태가 Proxy와 달라 제외
-- 측정 Node: `gw-01`, `node-01`, `node-02`, `node-03`, `node-04`
-- RF 평가: Calibration 4개, Test 6개 독립 위치
-
-강의실 수치와 복도 수치를 하나의 결과표에 섞지 않는다. 현재 논문용 기준은 복도 Experiment이며, 기존 강의실 산출물은 파이프라인 검증·참고용으로만 둔다.
-
-### Node Position Placeholder
-
-`Embedded/node_positions.json`의 대부분이 `(0,0,0)`이다. 실제 좌표로 사용하면 안 된다.
-
-### BSSID와 Channel
-
-Bring-up SSID/Channel을 최종 실험 설정으로 간주하지 않는다.
-
-### 좌표계
-
-실험마다 다음을 기록한다.
-
-- Frame ID
-- 단위
-- 원점
-- 축
-- Transform
-- TX/RX 높이
-
-### RSSI와 Sionna 결합 순서
-
-1. 독립 비교
-2. Global Offset
-3. Residual IDW
-4. 필요할 때만 Material Parameter 보정
-
-현재는 위 순서의 잠정 분석까지 완료했다. 다만 Offset과 반복 측정의 변동이 커서 최종 논문용 수치로 확정하지 않는다.
+1. **논문 위험:** 분석 수치는 좋아졌지만 누락 구간·BSSID 공란·사후 Offset 부재·잠정 Scene 때문에 최종 근거가 아니다.
+2. **통합 위험:** 각 JPEG 구성요소는 있으나 Graphics→Relay→Handheld 실제 종단 검증이 없다.
+3. **저장소 위험:** Graphics 로컬 변경은 GitHub `main`보다 앞서 있고, 일반 GitHub 제한을 넘는 약 184 MB PLY가 포함되어 Push 전 LFS 또는 산출물 분리가 필요하다.
 
 ## 7. 다음 작업
 
-1. 각 코드 저장소가 Docs를 참조하도록 README/AGENTS 정리
-2. 원본 Backend Export의 좌표와 Calibration/Test 역할 수정
-3. 실물 Payload와 복원 결과를 대조하고 Export 재생성
-4. Device Offset과 4개 Calibration 위치 반복 재측정
-5. Test 1·2 반복 차이를 줄인 뒤 RF 분석 재실행
-6. `paper_evidence_eligible=true` 판정 조건을 충족하는 최종 데이터 생성
-7. 이후 SIBR Viewer와 Handheld 진행
+1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 확정하고 Sionna를 다시 실행한다.
+2. 누락된 정방향 Test 1·2와 최소한의 Offset/BSSID 항목만 재측정해 엄격한 10×2 계약을 채운다.
+3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
+4. Graphics JPEG producer를 연결해 Relay→Handheld 실기기 종단 시험을 한다.
+5. 대형 PLY를 저장소에서 분리하거나 LFS로 이관한 뒤 팀 GitHub와 동기화한다.
+
+## 8. 저장소 기준
+
+2026-08-23 확인 시점의 원격 `main` 최신 커밋:
+
+| 저장소 | GitHub `main` |
+|---|---|
+| RFVisualizer | `e067e76` |
+| Embedded | `3bbd984` |
+| Network-Backend-Article | `96ae873` |
+| RFVisualizer-Docs | `69414f2` |
+
+Graphics 작업 폴더는 로컬 커밋 `102c2d1`까지 진행되어 원격보다 3개 커밋 앞서 있다. 이 문서는 로컬 구현과 실험 산출물을 기준으로 작성했으므로 GitHub 공개 상태와 구분해서 읽는다.

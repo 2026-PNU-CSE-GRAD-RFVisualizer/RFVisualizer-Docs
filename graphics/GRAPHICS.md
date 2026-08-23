@@ -355,13 +355,17 @@ Frame Queue는 1~2개로 제한하고, 처리하지 못한 오래된 Frame은 �
 - Sionna RT Phase 2-A
 - Proxy Obstacle Phase 2-B
 - Proxy Placement Editor Phase 2-C
-
-### 구현 진행
-
 - RF Experiment Framework
 - Backend Export 입력 처리
 - Sionna/IDW/Residual 비교
 - 평가 결과 Export
+- 3층 복도 Marker 배치와 Sionna `depth12` 실행
+
+### 부분 완료·추가 검증 필요
+
+- 8월 21일 실측 분석: 정방향 8 + 역방향 10 Segment 사용 가능
+- 3층 Scene: 계획도 기반 좌표·Scale과 계단/문/책상/AP 형상 보정 필요
+- 분석 결과: Residual IDW MAE 3.52 dB, 단 `paper_evidence_eligible=false`
 
 ### 아직 미구현
 
@@ -375,20 +379,15 @@ Frame Queue는 1~2개로 제한하고, 처리하지 못한 오래된 Frame은 �
 
 ## 10. 다음 작업
 
-1. 최종 실험에 사용할 Scene과 Experiment를 하나 선택한다.
-2. 실제 TX와 Calibration/Test 좌표를 Metric Scene에 통합한다.
-3. 실제 장애물의 위치·크기·방향을 반영한다.
-4. Backend Export를 RF Experiment Framework에 연결한다.
-5. Raw Sionna RT 결과를 생성한다.
-6. Plain IDW와 Residual IDW 결과를 생성한다.
-7. Test Point에서 MAE와 RMSE를 계산한다.
-8. 결과가 확보된 뒤 SIBR Viewer 구현으로 이동한다.
+1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정한다.
+2. 누락된 정방향 Test 1·2와 Offset/BSSID를 최소 재측정한다.
+3. Sionna/IDW/Residual 분석을 재실행하고 논문 근거 사용 가능 여부를 판정한다.
+4. 결과가 확정된 뒤 SIBR Viewer와 JPEG producer를 구현한다.
 
 ## 11. 미확정 항목
 
-- 실제 RSSI와 Sionna RT의 최종 결합 방식
-- Global Offset 보정 여부
-- Material Parameter 보정 여부
+- 최종 Scene의 형상·재질과 Sionna Solver 설정
+- Residual IDW 결과를 논문 최종 방식으로 사용할지 여부
 - 핸드헬드 Position 추정 알고리즘
 - PGSR Mesh Depth와 Unbiased Depth 중 최종 사용 방식
 - 여러 높이의 Radio Map 확장 여부

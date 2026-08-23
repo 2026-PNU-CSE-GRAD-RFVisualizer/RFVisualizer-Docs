@@ -696,30 +696,34 @@ struct HandheldControlPacket {
 
 ## 12. JPEG Frame Streaming Interface
 
-이 절은 현재 구현된 규격이 아니라 **계획 중인 초안**이다.
-
-현재 우선 후보:
+Network `image_relay`와 Embedded Handheld 수신 프로토타입이 사용하는 **기준 구현**이다.
+정수는 모두 big-endian이며 producer→relay와 relay→viewer가 같은 Frame을 사용한다.
 
 ```text
-Length Header + JPEG Payload over TCP
+Graphics ─TCP 9101─▶ image_relay ─TCP 9102─▶ Handheld / Viewer
+
+22-byte 고정 Header
+magic   uint32  0x52464A46 ('RFJF')
+version uint8   1
+flags   uint8   0 (JPEG)
+seq     uint32  Frame마다 1 증가
+ts_ms   uint64  Unix Epoch millisecond
+length  uint32  JPEG Payload 길이
+payload bytes   length만큼의 JPEG, 최대 8 MiB
 ```
 
-아직 확정하지 않은 항목:
+- Header 위반 또는 8 MiB 초과 Frame은 연결을 끊고 재접속으로 복구한다.
+- 느린 Viewer는 오래된 Frame을 버리고 최신 완성 Frame을 우선한다.
+- 권장 출력 해상도는 Handheld 화면 기준 800×480이다.
+- `flags=1` RGB332+zlib는 실험용이며 이 공통 JPEG 계약에 포함하지 않는다.
+- Network Relay와 Embedded Parser의 Host Test는 통과했다.
+- 실제 Graphics producer→Relay→Handheld 실기기 종단 시험은 아직 완료하지 않았다.
 
-- TCP Port
-- Protocol Version
-- Frame Header 구조
-- Header Byte Order
-- Frame Sequence
-- Timestamp
-- JPEG Quality
-- 최대 JPEG 크기
-- 수신 Timeout
-- 손상 Frame 처리
-- ESP32-S3 JPEG Buffer 구조
-- 재연결 절차
+남은 확정 항목:
 
-Render, Encode, Network Thread는 분리하고 오래된 Frame을 폐기하는 구조를 우선한다.
+- JPEG Quality와 실제 목표 FPS
+- 수신 Timeout과 장치별 재연결 정책
+- ESP32-S3 Buffer 크기와 실제 LCD Throughput
 
 ---
 
@@ -767,4 +771,5 @@ Render, Encode, Network Thread는 분리하고 오래된 Frame을 폐기하는 �
 - 강의실 Experiment와 복도 Experiment의 좌표계 분리
 - 실시간 WebSocket을 Graphics에서 실제로 사용할지
 - PositionEstimate 알고리즘
-- Handheld UDP/TCP Protocol
+- Handheld UDP Control Protocol
+- JPEG 실기기 종단 연동과 성능값

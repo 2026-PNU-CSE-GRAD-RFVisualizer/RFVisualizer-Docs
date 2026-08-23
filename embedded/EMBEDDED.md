@@ -47,7 +47,7 @@ Network Backend
 
 ### 2.2 MVP-B: 핸드헬드 방향·버튼
 
-향후 구현 범위다.
+BNO085 독립 시험 코드는 있으며, 버튼·전송·Viewer 연동은 아직 통합하지 않았다.
 
 - ESP32-S3
 - IMU Quaternion
@@ -58,7 +58,7 @@ Network Backend
 
 ### 2.3 MVP-C: JPEG·LCD
 
-구현 위험이 높은 시연 범위다.
+RFJF 수신·JPEG 디코드·NT35510 출력의 독립 프로토타입은 구현했다. 아래 목표의 실기기 통합·성능 검증은 남아 있다.
 
 - TCP JPEG Frame 수신
 - JPEG 디코딩
@@ -402,6 +402,10 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - Python MQTT Bridge
 - MQTT Publish
 - Backend 연결
+- BNO085 독립 시험 코드
+- NT35510 LCD 독립 시험 코드
+- JPEG TCP 수신·RFJF Parser·LCD 출력 프로토타입
+- Python Bridge 테스트 8개, JPEG Protocol Host Test 4개 통과
 
 ### 실물 검증 필요
 
@@ -419,6 +423,8 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 장치별 RSSI Offset 측정
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
+- BNO085 + 버튼 + JPEG + LCD 단일 Handheld 통합
+- 실제 ESP32-S3에서 800×480 JPEG 수신·디코드·표시 속도
 
 ## 11. 핸드헬드 하드웨어 계획
 
@@ -530,15 +536,15 @@ HealthTask
 6. Device Offset을 측정한다.
 7. 1~2시간 안정성 시험을 수행한다.
 8. Fault Injection 시험을 수행한다.
-9. 고정 RSSI 경로가 안정화된 뒤 핸드헬드 IMU 구현으로 이동한다.
-10. 마지막으로 JPEG·LCD 경로를 구현한다.
+9. 독립 구현된 BNO085·버튼·JPEG·LCD 경로를 하나의 Handheld로 통합한다.
+10. 실제 장치에서 800×480 Frame의 지연·FPS·재연결을 검증한다.
 
 ## 14. 미확정 항목
 
 - 최종 핸드헬드 Position 추정 알고리즘
-- 최종 IMU 모델
+- BNO085의 최종 장착 방향과 좌표축 변환
 - UDP Control Packet의 Byte Order와 Version
-- JPEG Frame Header
+- JPEG 확장 flags 사용 여부 (`flags=0` JPEG만 공통 계약)
 - JPEG Quality
 - 최대 Frame 크기
 - LCD 실제 Throughput
