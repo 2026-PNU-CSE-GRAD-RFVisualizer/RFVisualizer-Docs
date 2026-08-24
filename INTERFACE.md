@@ -18,7 +18,7 @@
 ### 1.2 RSSI
 
 - 단위: `dBm`
-- 기본 유효 범위: `-100 dBm` 이상, `-10 dBm` 이하
+- 기본 유효 범위: `-110 dBm` 이상, `-10 dBm` 이하
 - `rssi`: 필터링된 RSSI
 - `rssi_raw`: 필터링 전 원시 RSSI
 - `rssi_filtered_x10`: 임베디드 내부에서 사용하는 10배 Fixed-point 값
