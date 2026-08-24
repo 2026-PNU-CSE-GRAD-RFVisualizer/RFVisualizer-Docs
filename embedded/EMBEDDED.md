@@ -47,7 +47,7 @@ Network Backend
 
 ### 2.2 MVP-B: 핸드헬드 방향·버튼
 
-BNO085 독립 시험 코드는 있으며, 버튼·전송·Viewer 연동은 아직 통합하지 않았다.
+BNO085 독립 Quaternion 실물 시험과 RFHC v1 Serializer 공유 Vector 검증은 완료했다. 버튼·UDP 실물 송신·Viewer 연동은 아직 통합하지 않았다.
 
 - ESP32-S3
 - IMU Quaternion
@@ -58,7 +58,7 @@ BNO085 독립 시험 코드는 있으며, 버튼·전송·Viewer 연동은 아�
 
 ### 2.3 MVP-C: JPEG·LCD
 
-RFJF 수신·JPEG 디코드·NT35510 출력의 독립 프로토타입은 구현했다. 아래 목표의 실기기 통합·성능 검증은 남아 있다.
+서버 더미 RFJF/JPEG의 수신·디코드·NT35510 LCD 실물 출력은 완료했다. 실제 Graphics producer를 포함한 종단 통합과 지속 성능 검증은 남아 있다.
 
 - TCP JPEG Frame 수신
 - JPEG 디코딩
@@ -402,10 +402,12 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - Python MQTT Bridge
 - MQTT Publish
 - Backend 연결
-- BNO085 독립 시험 코드
+- BNO085 독립 시험 코드와 Quaternion 실물 시험
 - NT35510 LCD 독립 시험 코드
 - JPEG TCP 수신·RFJF Parser·LCD 출력 프로토타입
-- Python Bridge 테스트 8개, JPEG Protocol Host Test 4개 통과
+- 서버 더미 JPEG의 ESP32-S3 수신·디코드·LCD 실물 출력
+- RFHC v1 52-byte Serializer와 Backend 공유 CRC Vector 일치
+- Python Bridge 테스트 8개, JPEG Protocol Host Test 4개, RFHC Serializer Host Test 6개 통과
 
 ### 실물 검증 필요
 
@@ -424,7 +426,7 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
 - BNO085 + 버튼 + JPEG + LCD 단일 Handheld 통합
-- 실제 ESP32-S3에서 800×480 JPEG 수신·디코드·표시 속도
+- 실제 Graphics Frame으로 800×480 JPEG 수신·디코드·표시 지속 속도
 
 ## 11. 핸드헬드 하드웨어 계획
 
@@ -433,8 +435,8 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 기준 보드:
 
 ```text
-ESP32-S3-DEVKITC-1-N8R8
-Flash: 8 MB
+ESP32-S3-DEVKITC-1-N16R8
+Flash: 16 MB
 PSRAM: 8 MB
 ```
 
@@ -507,9 +509,10 @@ HealthTask
 ### Orientation
 
 - IMU Orientation은 지속적으로 갱신
-- Quaternion 형태로 PC에 전송
+- `INTERFACE.md`의 RFHC v1로 Backend UDP `9200`에 50 Hz 전송
 - Recenter 버튼 지원
 - Yaw Drift는 실제 장치 시험 후 처리 방식 결정
+- Wire Quaternion에는 실제 장착 변환 `q_mount`를 반영
 
 ### Position
 
@@ -517,6 +520,7 @@ HealthTask
 - 평상시 Camera Position 유지
 - Position Update 버튼 입력 시 갱신 요청
 - 실제 Position 계산은 PC 또는 Backend 담당
+- 설정 좌표 Provider는 통합 시험용이며 실제 위치 추정 완료로 취급하지 않음
 
 ### Video
 
@@ -543,7 +547,6 @@ HealthTask
 
 - 최종 핸드헬드 Position 추정 알고리즘
 - BNO085의 최종 장착 방향과 좌표축 변환
-- UDP Control Packet의 Byte Order와 Version
 - JPEG 확장 flags 사용 여부 (`flags=0` JPEG만 공통 계약)
 - JPEG Quality
 - 최대 Frame 크기

@@ -621,7 +621,7 @@ WS /frames
 
 ## 10. PositionEstimate
 
-PositionEstimate Endpoint는 현재 인터페이스만 구현되어 있다.
+실제 위치 추정 알고리즘은 아직 없지만, Handheld 통합 시험을 위한 Position 자료구조와 설정 좌표 Provider는 구현되어 있다.
 
 ```text
 GET /position/latest
@@ -644,53 +644,114 @@ GET /position/latest
 
 - HTTP Endpoint 존재
 - Position 자료구조 존재
+- `PositionProvider`와 `ConfiguredPositionProvider` 존재
+- 설정 좌표의 null, 2초 stale, confidence 0.5, `frame_id` 검증 존재
+- Handheld 관리 API `/handheld/positions`, `/handheld/position/active` 존재
 - 실제 위치 추정 알고리즘 없음
 - Graphics Viewer와 연결되지 않음
-- Handheld Position Update와 연결되지 않음
+- Handheld Position Update의 Backend 처리와 accepted/rejected 응답은 구현됐지만 Graphics 적용은 미검증
 
-이 Endpoint를 구현 완료된 위치 추정 기능으로 취급하지 않는다.
+설정 좌표 Provider는 통합 시연용이며 구현 완료된 위치 추정 알고리즘으로 취급하지 않는다. 좌표 단위는 meter, `+Z`는 위쪽이며 Backend Position과 Graphics Scene의 `frame_id`가 같아야 한다.
 
 ---
 
 ## 11. Handheld Control Interface
 
-이 절은 현재 구현된 규격이 아니라 **계획 중인 초안**이다.
+Embedded와 Backend가 RFHC v1 Wire 규격과 공유 Test Vector를 검증했다. Backend Parser·UDP Listener와 Embedded Serializer는 구현됐으며 실제 ESP32-S3 UDP 송신과 Graphics Camera 축 시험은 남아 있다.
 
-### 11.1 Control Packet 초안
+### 11.1 전송
 
-```c
-struct HandheldControlPacket {
-    uint64_t timestamp;
+| 항목 | 값 |
+|---|---|
+| Transport | UDP |
+| Backend Port | `9200` |
+| 주기 | 50 Hz, 20 ms |
+| Byte Order | 모든 다중 Byte 필드 Big-endian |
+| Float | IEEE-754 binary32의 32-bit 표현을 Big-endian 전송 |
+| Packet 크기 | 52 byte 고정 |
+| Timeout | 마지막 유효 Packet 이후 500 ms에 stale |
 
-    float quaternion_x;
-    float quaternion_y;
-    float quaternion_z;
-    float quaternion_w;
+### 11.2 RFHC v1 Packet
 
-    bool request_position_update;
-    bool recenter_orientation;
-};
+Magic은 ASCII `RFHC`, 정수값 `0x52464843`이다. C Struct를 그대로 전송하지 않고 아래 Offset에 맞춰 직렬화한다.
+
+| Offset | 크기 | 필드 | 설명 |
+|---:|---:|---|---|
+| 0 | 4 | `magic` | `0x52464843` (`RFHC`) |
+| 4 | 1 | `version` | `1` |
+| 5 | 1 | `flags` | 아래 Flag 정의 |
+| 6 | 2 | `packet_length` | 항상 `52` |
+| 8 | 4 | `device_id` | `1` = `handheld-01`, RSSI Node ID와 별도 Namespace |
+| 12 | 4 | `session_id` | 부팅마다 바뀌는 non-zero 값 |
+| 16 | 4 | `sample_seq` | Packet마다 1 증가, wrap 허용 |
+| 20 | 4 | `event_seq` | 새 버튼 Event마다 1 증가 |
+| 24 | 8 | `timestamp_ms` | SNTP 동기화 시 Unix epoch ms, 아니면 `0` |
+| 32 | 4 | `quaternion_x` | Handheld 논리 축 Quaternion X |
+| 36 | 4 | `quaternion_y` | Handheld 논리 축 Quaternion Y |
+| 40 | 4 | `quaternion_z` | Handheld 논리 축 Quaternion Z |
+| 44 | 4 | `quaternion_w` | Handheld 논리 축 Quaternion W |
+| 48 | 4 | `crc32` | Offset 0~47에 대한 CRC32/IEEE |
+
+CRC는 CRC-32/ISO-HDLC를 사용한다.
+
+```text
+Polynomial: 0x04C11DB7
+RefIn/RefOut: true
+Init: 0xFFFFFFFF
+XorOut: 0xFFFFFFFF
+Check("123456789"): 0xCBF43926
 ```
 
-의미:
+### 11.3 Flag와 Event
 
-- Quaternion은 Camera Orientation 갱신에 사용한다.
-- `request_position_update=true`이면 최신 PositionEstimate 적용을 요청한다.
-- `recenter_orientation=true`이면 현재 방향을 기준 방향으로 다시 설정한다.
+| Bit | 이름 | 의미 |
+|---:|---|---|
+| 0 | `ORIENTATION_VALID` | finite이며 norm 0.97~1.03인 Quaternion |
+| 1 | `REQUEST_POSITION_UPDATE` | Backend 최신 유효 Position 적용 요청 |
+| 2 | `RECENTER_ORIENTATION` | 현재 방향을 Graphics 기준 정면으로 설정 요청 |
+| 3 | `TIME_SYNCED` | `timestamp_ms`가 Unix epoch ms로 유효 |
+| 4~7 | Reserved | 송신 시 0, 수신 시 non-zero이면 거부 |
 
-### 11.2 미확정 항목
+버튼 Event는 동일 Flag와 `event_seq`를 3개 연속 Packet에 반복한다. Backend는 `(device_id, session_id, event_seq, flag)`로 중복을 제거하고 정확히 한 번 처리한다.
 
-- Packet Version
-- Byte Order
-- Struct Padding
-- CRC 또는 Checksum
-- UDP Port
-- Packet 전송 주기
-- Timeout
-- Quaternion 좌표축 규약
-- Camera 축 변환 규칙
+`TIME_SYNCED=0`이면 `timestamp_ms=0`이며 Backend 수신 시각을 사용한다. `session_id`가 바뀌면 Backend는 Handheld 재부팅으로 처리하고 Sequence 상태를 초기화한다.
 
-위 항목이 확정되기 전까지 이 Struct를 파트 간 최종 규격으로 사용하지 않는다.
+### 11.4 Quaternion 좌표축
+
+LCD를 사용자가 정면에서 볼 때 Handheld 논리 축은 다음과 같다.
+
+- `+X`: 화면 오른쪽
+- `+Y`: 화면 위쪽
+- `+Z`: 화면에서 사용자 방향
+
+Wire Packet은 BNO085 Breakout 원시 축이 아니라 고정 장착 변환 `q_mount`가 반영된 Handheld 논리 축 Quaternion을 사용한다. 실제 `q_mount`와 Graphics Camera 축 변환은 장착 방향 고정 후 Yaw·Pitch·Roll 90도 실물 시험으로 확정한다.
+
+### 11.5 공유 Test Vector
+
+입력:
+
+```text
+version=1, flags=0x01, device_id=1, session_id=0x12345678
+sample_seq=1, event_seq=0, timestamp_ms=0
+quaternion=(0,0,0,1)
+```
+
+기대 52 byte:
+
+```text
+52464843010100340000000112345678000000010000000000000000000000000000000000000000000000003F8000000AE927E5
+```
+
+Embedded Serializer와 Backend Parser Test에서 전체 Byte와 CRC `0x0AE927E5`가 일치했다.
+
+### 11.6 Backend → Graphics
+
+Graphics는 Backend WebSocket `/handheld/control`을 구독한다.
+
+- `handheld_state`: 최신 Quaternion, Sequence, 버튼 Event, stale 상태
+- `position_update`: Position 적용의 accepted/rejected와 거부 이유
+- Orientation은 Position과 독립적으로 계속 적용한다.
+- Position은 `accepted=true`이고 현재 Scene과 `frame_id`가 같을 때만 적용한다.
 
 ---
 
@@ -717,6 +778,7 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - 권장 출력 해상도는 Handheld 화면 기준 800×480이다.
 - `flags=1` RGB332+zlib는 실험용이며 이 공통 JPEG 계약에 포함하지 않는다.
 - Network Relay와 Embedded Parser의 Host Test는 통과했다.
+- 서버 더미 JPEG→ESP32-S3 수신·디코드·NT35510 LCD 실물 출력은 통과했다.
 - 실제 Graphics producer→Relay→Handheld 실기기 종단 시험은 아직 완료하지 않았다.
 
 남은 확정 항목:
@@ -771,5 +833,5 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - 강의실 Experiment와 복도 Experiment의 좌표계 분리
 - 실시간 WebSocket을 Graphics에서 실제로 사용할지
 - PositionEstimate 알고리즘
-- Handheld UDP Control Protocol
+- BNO085 실제 장착 변환 `q_mount`와 Graphics Camera 축 변환
 - JPEG 실기기 종단 연동과 성능값
