@@ -468,13 +468,15 @@ experiments/<experiment_id>/
 │   └── measurements_raw.csv
 ├── processed/
 │   ├── measurements_summary.csv
+│   ├── calibration_by_test_window.csv
 │   ├── calibration_points.csv
 │   └── test_points.csv
 ├── config/
 │   ├── points.csv
 │   ├── tx_rx.json
 │   ├── device_offsets.json
-│   └── sessions.json
+│   ├── runs.json
+│   └── test_segments.json
 ├── qc_report.json
 └── README.md
 ```
@@ -488,6 +490,10 @@ experiments/<experiment_id>/
 ```text
 experiment_id
 session_id
+run_id
+segment_id
+direction
+pass_index
 point_id
 point_role
 node_id
@@ -546,15 +552,20 @@ corrected_rssi
 
 | 파일 | 용도 |
 |---|---|
-| `processed/calibration_points.csv` | IDW 또는 Residual IDW 보정 입력 |
+| `processed/calibration_by_test_window.csv` | 각 Test Segment와 같은 시간창의 C1~C4, 평가 시 IDW/Residual IDW 입력 |
+| `processed/calibration_points.csv` | Run 전체 Calibration 진단·Viewer 정적 Volume 입력, Test별 평가에 공통 재사용 금지 |
 | `processed/test_points.csv` | MAE·RMSE 평가 |
 | `processed/measurements_summary.csv` | 전체 Point의 대표값 |
 | `config/tx_rx.json` | Sionna RT TX/RX 좌표 |
 | `config/device_offsets.json` | 장치별 RSSI 보정값 |
+| `config/runs.json` | 정·역방향 Run과 pre/post Offset 연결 |
+| `config/test_segments.json` | Test 순서·시도·기록 시간·discard/supersede 상태 |
 | `raw/measurements_raw.csv` | 원본 시계열 검증 |
 | `qc_report.json` | 실험 품질 검사 결과 |
 
-Calibration Point는 RF 보정에 사용한다.
+Test별 평가는 `test_points.csv.segment_id`와
+`calibration_by_test_window.csv.segment_id`를 연결해 같은 시간창의 Calibration만 사용한다.
+`calibration_points.csv`의 Run 전체 평균을 모든 Test에 공통 적용하지 않는다.
 
 Test Point는 보정에 사용하지 않고 평가에만 사용한다.
 
@@ -621,7 +632,8 @@ WS /frames
 
 ## 10. PositionEstimate
 
-실제 위치 추정 알고리즘은 아직 없지만, Handheld 통합 시험을 위한 Position 자료구조와 설정 좌표 Provider는 구현되어 있다.
+실제 위치 추정 알고리즘은 아직 없다. Realtime의 `GET /position/latest`는 기존
+PositionEstimate 인터페이스이고, Handheld 통합 시험은 별도의 설정 좌표 Provider를 사용한다.
 
 ```text
 GET /position/latest
@@ -640,13 +652,14 @@ GET /position/latest
 }
 ```
 
-현재 상태:
+Handheld 설정 좌표 Provider 상태:
 
 - HTTP Endpoint 존재
 - Position 자료구조 존재
 - `PositionProvider`와 `ConfiguredPositionProvider` 존재
 - 설정 좌표의 null, 2초 stale, confidence 0.5, `frame_id` 검증 존재
 - Handheld 관리 API `/handheld/positions`, `/handheld/position/active` 존재
+- 현재 시연 좌표: `pnu_3f_corridor_metric_v1`, `demo-1=(21.40, 17.80, 1.60)`
 - 실제 위치 추정 알고리즘 없음
 - Graphics Viewer와 연결되지 않음
 - Handheld Position Update의 Backend 처리와 accepted/rejected 응답은 구현됐지만 Graphics 적용은 미검증
@@ -746,7 +759,8 @@ Embedded Serializer와 Backend Parser Test에서 전체 Byte와 CRC `0x0AE927E5`
 
 ### 11.6 Backend → Graphics
 
-Graphics는 Backend WebSocket `/handheld/control`을 구독한다.
+Graphics는 Backend WebSocket `/handheld/control`을 구독해야 한다. Backend 송신 계약은
+구현됐지만 현재 Graphics Consumer와 Camera 적용 코드는 없다.
 
 - `handheld_state`: 최신 Quaternion, Sequence, 버튼 Event, stale 상태
 - `position_update`: Position 적용의 accepted/rejected와 거부 이유
@@ -779,6 +793,8 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - `flags=1` RGB332+zlib는 실험용이며 이 공통 JPEG 계약에 포함하지 않는다.
 - Network Relay와 Embedded Parser의 Host Test는 통과했다.
 - 서버 더미 JPEG→ESP32-S3 수신·디코드·NT35510 LCD 실물 출력은 통과했다.
+- Graphics Workspace에는 PBO Readback·JPEG Encoding·RFJF 송신 producer 프로토타입이 있다.
+- 해당 Graphics C++ 소스는 `SIBR_viewers/src/projects/*` ignore 규칙으로 Git에 반영되지 않았다.
 - 실제 Graphics producer→Relay→Handheld 실기기 종단 시험은 아직 완료하지 않았다.
 
 남은 확정 항목:
@@ -831,7 +847,8 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - 실제 Node ID와 설치 위치의 대응
 - Bridge 위치 정보와 Backend Assignment 중 어느 값을 기준으로 사용할지
 - 강의실 Experiment와 복도 Experiment의 좌표계 분리
-- 실시간 WebSocket을 Graphics에서 실제로 사용할지
+- `/handheld/control`을 Graphics Camera에 적용하는 축 변환·Recenter 규칙
 - PositionEstimate 알고리즘
 - BNO085 실제 장착 변환 `q_mount`와 Graphics Camera 축 변환
-- JPEG 실기기 종단 연동과 성능값
+- Graphics C++ 소스 Git 반영과 깨끗한 Clone 재빌드
+- JPEG 실기기 종단 연동과 300초 성능값

@@ -47,7 +47,9 @@ Network Backend
 
 ### 2.2 MVP-B: 핸드헬드 방향·버튼
 
-BNO085 독립 Quaternion 실물 시험과 RFHC v1 Serializer 공유 Vector 검증은 완료했다. 버튼·UDP 실물 송신·Viewer 연동은 아직 통합하지 않았다.
+BNO085 독립 Quaternion 실물 시험과 RFHC v1 Serializer 공유 Vector 검증은 완료했다.
+Serializer는 `handheld_jpeg_stream` Component에 포함됐지만 `app_main`의 실제 UDP 송신
+Task에서는 아직 호출하지 않는다. 버튼·UDP 실물 송신·Viewer 연동도 통합 전이다.
 
 - ESP32-S3
 - IMU Quaternion
@@ -409,6 +411,8 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - RFHC v1 52-byte Serializer와 Backend 공유 CRC Vector 일치
 - Python Bridge 테스트 8개, JPEG Protocol Host Test 4개, RFHC Serializer Host Test 6개 통과
 
+위 테스트 수는 Embedded 저장소의 최신 기록이다. 이번 공통 문서 갱신에서는 다시 실행하지 않았다.
+
 ### 실물 검증 필요
 
 - ESP32 3~5대 동시 측정
@@ -426,6 +430,9 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
 - BNO085 + 버튼 + JPEG + LCD 단일 Handheld 통합
+- RFHC Serializer를 50 Hz UDP `ControlTxTask`에 연결
+- 버튼 Event 3 Packet 반복과 `sample_seq`·`event_seq` 관리
+- 최종 장착 방향의 `q_mount` 적용
 - 실제 Graphics Frame으로 800×480 JPEG 수신·디코드·표시 지속 속도
 
 ## 11. 핸드헬드 하드웨어 계획
@@ -540,8 +547,9 @@ HealthTask
 6. Device Offset을 측정한다.
 7. 1~2시간 안정성 시험을 수행한다.
 8. Fault Injection 시험을 수행한다.
-9. 독립 구현된 BNO085·버튼·JPEG·LCD 경로를 하나의 Handheld로 통합한다.
-10. 실제 장치에서 800×480 Frame의 지연·FPS·재연결을 검증한다.
+9. `handheld_jpeg_stream`에 BNO085와 버튼 Task를 이식한다.
+10. RFHC Serializer를 UDP `9200`, 50 Hz `ControlTxTask`에 연결한다.
+11. 실제 장치에서 800×480 Frame의 지연·FPS·재연결을 검증한다.
 
 ## 14. 미확정 항목
 
@@ -549,7 +557,6 @@ HealthTask
 - BNO085의 최종 장착 방향과 좌표축 변환
 - JPEG 확장 flags 사용 여부 (`flags=0` JPEG만 공통 계약)
 - JPEG Quality
-- 최대 Frame 크기
 - LCD 실제 Throughput
 - LCD Pin Mapping
 - 배터리와 전력 관리

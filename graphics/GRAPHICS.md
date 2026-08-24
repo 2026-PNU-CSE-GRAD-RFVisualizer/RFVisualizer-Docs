@@ -39,8 +39,10 @@ Sionna RT Scene
 Radio Map / Path / Coverage 결과
           ↓
 실제 RSSI와 비교·보정
-          ↓
-향후 SIBR 기반 실시간 Viewer
+  ↓
+높이별 3D RF Volume Bundle
+  ↓
+SIBR RF Volume·JPEG 송신 로컬 프로토타입
 ```
 
 ## 3. PGSR 장면 재구성
@@ -295,7 +297,7 @@ corrected_rssi = median_filtered + device_offset_db
 - MAE와 RMSE로 평가
 - Geometry Error와 Material/RSSI Error를 분리해서 분석
 
-## 8. 최종 Viewer 계획
+## 8. 3D RF Volume과 SIBR Viewer
 
 최종 Viewer의 우선 기반은 공식 SIBR Real-time Viewer Fork다.
 
@@ -307,41 +309,88 @@ corrected_rssi = median_filtered + device_offset_db
 프로젝트 전용 기능 추가
 ```
 
-추가할 기능:
+### 8.1 추적되는 Volume Export
+
+`tools/rf_experiment/volume.py`와 `export-viewer-volume` 명령은 Git에 반영돼 있다.
+
+현재 3층 복도 산출물 기준:
+
+```text
+Z 높이: 0.25, 0.75, 1.25, 1.75, 2.25, 2.75 m
+Grid: 6 × 28 × 60 (Z × Y × X)
+간격: XY 0.75 m, Z 0.5 m
+채널: Raw Sionna, Plain IDW, Residual IDW, Valid Mask
+```
+
+Viewer Bundle은 다음 파일로 구성된다.
+
+```text
+viewer_volume/
+├── manifest.json
+├── volume_rgba_f32.bin
+└── occlusion_meshes/
+```
+
+실측 Residual은 `z=0.45 m`에서만 존재하므로 다른 높이의 Residual IDW는 검증되지 않은
+XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
+`vertical_extrapolation=true`를 기록한다.
+
+### 8.2 로컬 SIBR 프로토타입
+
+현재 Workspace에는 다음 기능의 C++ 소스와 빌드 결과가 있다.
 
 - PGSR Gaussian Scene 로딩
-- Radio Map Texture 로딩
-- OpenGL Heatmap Plane
-- PGSR Mesh Depth-only Pass
-- Depth 기반 Heatmap Composite
-- Dear ImGui 상태 UI
+- `GL_TEXTURE_3D` 기반 RF Volume 로딩
+- Proxy Mesh Depth-only Pass와 가림 합성
+- Raw Sionna / Plain IDW / Residual IDW 전환
+- Dear ImGui Method·Opacity UI
 - Offscreen 800×480 Framebuffer
-- IMU Pose 수신
-- 버튼식 Position Update
-- JPEG Encoding
-- TCP Streaming
+- PBO Readback, JPEG Encoding, RFJF 22-byte Header
+- TCP `9101` 송신과 최신 Frame 1개 Queue
 
-### Render Pass
+실행 인자:
 
 ```text
-Pass 1: Gaussian Scene Color
-Pass 2: PGSR Mesh Depth
-Pass 3: Heatmap Color + Depth
-Pass 4: Depth 비교 및 Alpha Composite
-Pass 5: UI
-Pass 6: Offscreen 800×480 출력
+--rf-volume <viewer_volume/manifest.json>
+--rf-method 0|1|2
+--rf-heatmap-off
+--stream-host <relay-host>
+--stream-port 9101
+--stream-fps 12
+--jpeg-quality 80
+--run-seconds <seconds>
+--metrics-json <path>
 ```
 
-### Thread 구조
+그러나 `gaussian-splatting/SIBR_viewers/.gitignore`의 `src/projects/*` 규칙 때문에
+`RFVolumeRenderer`, `JpegStreamer`, 수정된 `GaussianView`와 `main.cpp`가 모두 Git에서
+무시된다. 일부 빌드 실행 파일만 원격 `main`에 있어 깨끗한 Clone에서 재빌드할 수 없다.
+따라서 현재 상태는 **로컬 프로토타입**이며 팀 재현 가능한 구현 완료가 아니다.
+
+### 8.3 아직 없는 연결
+
+- Backend WebSocket `/handheld/control` 구독
+- Quaternion→Graphics Camera 축 변환
+- Recenter와 Position Update 적용
+- 실제 Relay→Handheld 300초 지속 성능 검증
+
+### 현재 Render·송신 흐름
 
 ```text
-Pose Receiver Thread
 Render Thread
-Encoder Thread
-Network Thread
+  ├─ Gaussian Scene Color
+  ├─ Proxy Mesh Depth
+  ├─ 3D RF Volume Ray Marching·Alpha Composite
+  └─ PBO 비동기 Readback
+          ↓ 최신 CPU Frame 1개
+JpegStreamer Worker
+  ├─ 화면 Flip·범례·PROVISIONAL·FPS Overlay
+  ├─ JPEG Encoding
+  └─ RFJF Header + TCP 송신·재연결
 ```
 
-Frame Queue는 1~2개로 제한하고, 처리하지 못한 오래된 Frame은 폐기한다.
+현재 Encoder와 TCP 송신은 하나의 Worker Thread에서 처리한다. CPU Queue는 최신 Frame
+1개만 유지하고 처리하지 못한 오래된 Frame은 폐기한다. Pose Receiver는 아직 없다.
 
 ## 9. 현재 구현 상태
 
@@ -361,28 +410,35 @@ Frame Queue는 1~2개로 제한하고, 처리하지 못한 오래된 Frame은 �
 - 평가 결과 Export
 - 3층 복도 Marker 배치와 Sionna `depth12` 실행
 
-### 부분 완료·추가 검증 필요
+### 구현·테스트 완료
+
+- 높이별 Sionna 결과 저장
+- 3D RF Volume Bundle Export
+- Graphics Python 도구 375개 통과, 2개 건너뜀
+
+### 로컬 프로토타입·추가 검증 필요
 
 - 8월 21일 실측 분석: 정방향 8 + 역방향 10 Segment 사용 가능
 - 3층 Scene: 계획도 기반 좌표·Scale과 계단/문/책상/AP 형상 보정 필요
 - 분석 결과: Residual IDW MAE 3.52 dB, 단 `paper_evidence_eligible=false`
+- SIBR RF Volume·Depth 가림·Offscreen Rendering
+- JPEG Encoding·RFJF TCP Streaming
+- 위 C++ 소스의 Git 반영과 깨끗한 Clone 재빌드
 
 ### 아직 미구현
 
-- SIBR Heatmap Viewer
-- Mesh Depth-only Pass
-- Offscreen 800×480 Rendering
-- IMU Pose 수신
-- Position Update
-- JPEG Encoding
-- Frame Streaming
+- `/handheld/control` WebSocket Consumer
+- IMU Camera 축 변환·Recenter·Position Update
+- Graphics→Relay→Handheld 실기기 종단 검증
 
 ## 10. 다음 작업
 
 1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정한다.
 2. 누락된 정방향 Test 1·2와 Offset/BSSID를 최소 재측정한다.
 3. Sionna/IDW/Residual 분석을 재실행하고 논문 근거 사용 가능 여부를 판정한다.
-4. 결과가 확정된 뒤 SIBR Viewer와 JPEG producer를 구현한다.
+4. SIBR `src/projects/gaussianviewer`를 Git ignore 예외로 등록하고 소스만 Commit한다.
+5. 깨끗한 Clone에서 SIBR를 재빌드하고 RF Volume 실제 Frame을 확인한다.
+6. `/handheld/control`을 Camera에 연결한 뒤 Relay→Handheld 300초 시험을 수행한다.
 
 ## 11. 미확정 항목
 
@@ -390,8 +446,8 @@ Frame Queue는 1~2개로 제한하고, 처리하지 못한 오래된 Frame은 �
 - Residual IDW 결과를 논문 최종 방식으로 사용할지 여부
 - 핸드헬드 Position 추정 알고리즘
 - PGSR Mesh Depth와 Unbiased Depth 중 최종 사용 방식
-- 여러 높이의 Radio Map 확장 여부
-- JPEG Encoder와 GPU Readback 방식
+- RF Volume Step·Opacity와 JPEG Quality의 최종값
+- 300초 시험의 최종 목표 FPS(현재 제안은 평균 10 FPS 이상)
 
 ## 12. 참고 연구
 

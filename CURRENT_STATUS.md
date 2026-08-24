@@ -5,7 +5,7 @@
 
 ## 1. 한 줄 요약
 
-3층 복도 장면·RF 분석, RFHC Handheld Control 기반 구현, JPEG 중계/수신 프로토타입까지 진행했지만, 실제 Handheld↔Backend↔Graphics 종단 통합과 최종 논문용 RF 데이터 확보는 남아 있다.
+3층 복도 장면·RF 분석, RFHC Handheld Control, 3D RF Volume과 JPEG 송신 로컬 프로토타입까지 진행했지만, Graphics 핵심 소스의 Git 반영, 실제 Handheld↔Backend↔Graphics 종단 통합과 최종 논문용 RF 데이터 확보는 남아 있다.
 
 ## 2. 핵심 상태
 
@@ -22,7 +22,8 @@
 | Handheld JPEG·LCD | 서버 더미 JPEG 실물 출력 완료 | Graphics producer 종단·지속 성능 미검증 |
 | Handheld BNO085 | 독립 실물 시험 완료 | 버튼·UDP·Graphics 통합 미완료 |
 | Handheld Control RFHC v1 | Backend/Embedded 구현·공유 Vector 일치 | 실제 UDP 송신·Graphics 축 미검증 |
-| SIBR Heatmap Viewer | 미구현 | Graphics JPEG producer도 미구현 |
+| 3D RF Volume Bundle | 구현·테스트 완료 | 높이 방향 Residual은 외삽, 논문 근거 불가 |
+| SIBR Heatmap·JPEG Producer | 로컬 프로토타입·빌드 완료 | 핵심 C++ 소스 Git 미반영, 종단 미검증 |
 | 최종 논문용 데이터 | 미확정 | `paper_evidence_eligible=false` |
 
 ## 3. 최신 RF 실험 결과
@@ -67,13 +68,18 @@
 - 3층 복도 PGSR Gaussian/Surface Mesh와 Metric Scene
 - Proxy Envelope, Marker 배치, Sionna `depth12` 실행
 - Backend Export 입력, 동시간 Calibration 매칭, Sionna/IDW/Residual 비교
-- RF 분석 테스트 32개와 Sionna/Proxy 도구 테스트 242개 통과, 1개 건너뜀
+- 6개 높이 Sionna Volume과 Viewer Bundle Export 구현
+- Graphics Python 도구 전체 375개 통과, 2개 건너뜀 (`pgsr` 환경, `--import-mode=importlib`)
+- 로컬 SIBR에 RF Volume 합성, Mesh Depth 가림, Offscreen 800×480, RFJF/JPEG 송신 코드와 빌드 결과 존재
 
 남은 작업:
 
 - 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정
 - 장면 좌표 오차(현재 계획도 기반 약 ±0.5 m)와 Scale 재검증
-- SIBR Heatmap, Depth Pass, Offscreen 800×480, JPEG producer 구현
+- `SIBR_viewers/src/projects/*` ignore 규칙을 수정하고 Graphics 확장 C++ 소스를 Git에 반영
+- 깨끗한 Clone에서 SIBR 재빌드·Heatmap 실제 렌더 검증
+- `/handheld/control` 구독과 Camera 축·Recenter·Position 적용
+- Graphics→Relay→Handheld 300초 지속 FPS 검증
 
 ### 임베디드
 
@@ -109,8 +115,8 @@
 현재 제한:
 
 - 실센서 5대 전체 리허설과 재시작/재연결 실제 동작은 미검증이다.
-- `backend/parsing.py`의 독립 `ParseConfig()` 기본값은 아직 `-100 dBm`이고, 실제 MQTT 경로는 `Settings(-110)`을 전달한다. 두 기본값을 맞춰야 한다.
-- Image Relay는 독립 시험까지 완료했지만 Graphics producer와 실제 Handheld를 함께 연결하지 않았다.
+- 독립 `ParseConfig()`와 런타임 `Settings`의 RSSI 하한은 모두 `-110 dBm`으로 일치한다.
+- Image Relay와 Graphics 로컬 producer 코드는 있으나 실제 Handheld와 함께 연결하지 않았다.
 
 ## 5. 공통 계약과 통합 상태
 
@@ -125,7 +131,7 @@ magic='RFJF', version=1, flags=0, seq, ts_ms, length
 payload 최대 8 MiB
 ```
 
-이 규격의 코드·Host Test는 있으나 실제 Graphics sender가 없어 전체 통합 완료로 보지 않는다. `flags=1` RGB332+zlib 경로는 실험용이며 공통 JPEG 계약에 포함하지 않는다.
+Network Relay·Embedded 수신 코드와 Graphics 로컬 sender 프로토타입이 이 규격을 사용한다. 다만 Graphics 핵심 C++ 소스는 아직 Git에 반영되지 않았고 실기기 종단 시험도 없으므로 전체 통합 완료로 보지 않는다. `flags=1` RGB332+zlib 경로는 실험용이며 공통 JPEG 계약에 포함하지 않는다.
 
 ### Handheld Control 기준 구현
 
@@ -152,17 +158,17 @@ Backend Parser·Listener와 Embedded Serializer는 구현됐다. 실제 ESP32-S3
 
 1. **논문 위험:** 분석 수치는 좋아졌지만 누락 구간·BSSID 공란·사후 Offset 부재·잠정 Scene 때문에 최종 근거가 아니다.
 2. **통합 위험:** RFHC와 JPEG의 개별 구성요소는 있으나 Handheld→Backend→Graphics→Relay→Handheld 실제 종단 검증이 없다.
-3. **저장소 위험:** Graphics 로컬 변경은 GitHub `main`보다 앞서 있고, 일반 GitHub 제한을 넘는 약 184 MB PLY가 포함되어 Push 전 LFS 또는 산출물 분리가 필요하다.
+3. **저장소 위험:** Graphics `main`은 원격과 일치하지만 `SIBR_viewers/src/projects/*` 규칙 때문에 RF Volume/JPEG 핵심 C++ 소스가 모두 무시되고, 재현에 필요한 소스 대신 일부 빌드 실행 파일만 Git에 포함돼 있다.
 
 ## 7. 다음 작업
 
 1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 확정하고 Sionna를 다시 실행한다.
 2. 누락된 정방향 Test 1·2와 최소한의 Offset/BSSID 항목만 재측정해 엄격한 10×2 계약을 채운다.
 3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
-4. Embedded에서 BNO085·버튼·RFHC UDP·JPEG-LCD를 단일 Firmware로 통합한다.
+4. Graphics의 SIBR RF Volume/JPEG C++ 소스를 Git에 반영하고 깨끗한 Clone에서 재빌드한다.
 5. Graphics가 `/handheld/control`을 구독하고 Camera 축·Recenter·Position을 연결한다.
-6. Graphics JPEG producer를 연결해 Relay→Handheld 실기기 종단 시험을 한다.
-7. 대형 PLY를 저장소에서 분리하거나 LFS로 이관한 뒤 팀 GitHub와 동기화한다.
+6. Embedded에서 BNO085·버튼·RFHC UDP·JPEG-LCD를 단일 Firmware로 통합한다.
+7. Graphics→Relay→Handheld를 연결해 800×480, 300초 지속 FPS를 검증한다.
 
 ## 8. 저장소 기준
 
@@ -170,9 +176,9 @@ Backend Parser·Listener와 Embedded Serializer는 구현됐다. 실제 ESP32-S3
 
 | 저장소 | GitHub `main` |
 |---|---|
-| RFVisualizer | `e067e76` |
-| Embedded | `3bbd984` |
-| Network-Backend-Article | `96ae873` |
-| RFVisualizer-Docs | `e848783` |
+| RFVisualizer | `5408158` |
+| Embedded | `a3cab20` |
+| Network-Backend-Article | `bfd151d` |
+| RFVisualizer-Docs | `3fa9f22` (이 문서 수정 전) |
 
-Network의 Handheld 구현은 별도 전달 문서에서 커밋·65개 테스트 통과를 확인했지만 해당 커밋 해시는 이 표에 반영하지 않았다. 이 문서는 각 파트의 최신 전달 내용과 실험 산출물을 함께 기준으로 하므로 표의 원격 Hash와 구분해서 읽는다.
+이번 갱신에서 Graphics 테스트만 재실행했다. Network와 Embedded의 테스트 수는 각 저장소의 최신 기록을 인용했으며 다시 실행하지 않았다.
