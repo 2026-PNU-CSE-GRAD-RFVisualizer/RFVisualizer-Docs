@@ -20,7 +20,7 @@
 | Network Backend | Export/QC/복구 로직 검증 | 실센서 전체 리허설은 미검증 |
 | JPEG Image Relay | 구현·테스트 완료 | 실제 Graphics→Handheld 종단 미검증 |
 | Handheld JPEG·LCD | 서버 더미 JPEG 실물 출력 완료 | Graphics producer 종단·지속 성능 미검증 |
-| Handheld BNO085 | 독립 실물 시험 완료 | 버튼·UDP·Graphics 통합 미완료 |
+| Handheld BNO085·LCD | 약 50 Hz Quaternion·로컬 3D 시점 이동 실물 검증 | 버튼·UDP·Graphics 통합 미완료 |
 | Handheld Control RFHC v1 | Backend/Embedded 구현·공유 Vector 일치 | 실제 UDP 송신·Graphics 축 미검증 |
 | 3D RF Volume Bundle | 구현·테스트 완료 | 높이 방향 Residual은 외삽, 논문 근거 불가 |
 | SIBR Heatmap·JPEG Producer | 로컬 프로토타입·빌드 완료 | 핵심 C++ 소스 Git 미반영, 종단 미검증 |
@@ -91,12 +91,14 @@
 - RFHC v1 Serializer Host Test 6개 통과, Backend 공유 52-byte/CRC Vector 일치
 - BNO085 독립 Quaternion 실물 시험 완료
 - 서버 더미 JPEG의 TCP 수신·디코드·NT35510 LCD 실물 출력 완료
+- BNO085와 NT35510 LCD 동시 구동, 부팅 자세 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동 실물 검증
+- 로컬 통합 시험에서 BNO085 약 50 Hz를 유지했고 LCD 색상 깨짐·녹색 줄 없이 동작함
 
 실물 검증 필요:
 
 - RSSI 장치 3~5대 정·역방향 전체 리허설과 1~2시간 안정성
 - 고정 BSSID/Channel, 사전·사후 Device Offset, Fault Injection
-- BNO085 + 버튼 + JPEG + LCD의 단일 Handheld 통합
+- 버튼·RFHC UDP 송신·네트워크 JPEG-LCD 경로의 단일 Handheld Firmware 통합
 - 실제 Graphics Frame으로 800×480 수신·디코드·표시 지속 속도
 
 ### 네트워크
@@ -167,7 +169,7 @@ Backend Parser·Listener와 Embedded Serializer는 구현됐다. 실제 ESP32-S3
 3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
 4. Graphics의 SIBR RF Volume/JPEG C++ 소스를 Git에 반영하고 깨끗한 Clone에서 재빌드한다.
 5. Graphics가 `/handheld/control`을 구독하고 Camera 축·Recenter·Position을 연결한다.
-6. Embedded에서 BNO085·버튼·RFHC UDP·JPEG-LCD를 단일 Firmware로 통합한다.
+6. Embedded의 검증된 BNO085·LCD 로컬 통합에 버튼·RFHC UDP·네트워크 JPEG 경로를 연결해 단일 Firmware로 통합한다.
 7. Graphics→Relay→Handheld를 연결해 800×480, 300초 지속 FPS를 검증한다.
 
 ## 8. 저장소 기준

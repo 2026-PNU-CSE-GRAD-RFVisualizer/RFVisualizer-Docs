@@ -48,8 +48,10 @@ Network Backend
 ### 2.2 MVP-B: 핸드헬드 방향·버튼
 
 BNO085 독립 Quaternion 실물 시험과 RFHC v1 Serializer 공유 Vector 검증은 완료했다.
-Serializer는 `handheld_jpeg_stream` Component에 포함됐지만 `app_main`의 실제 UDP 송신
-Task에서는 아직 호출하지 않는다. 버튼·UDP 실물 송신·Viewer 연동도 통합 전이다.
+추가로 `handheld_jpeg_stream`에서 BNO085와 NT35510 LCD를 동시에 구동하고, 부팅 자세를
+정면으로 삼는 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동을 실물 검증했다.
+Serializer는 Component에 포함됐지만 `app_main`의 실제 UDP 송신 Task에서는 아직 호출하지
+않는다. 버튼·UDP 실물 송신·Viewer 연동도 통합 전이다.
 
 - ESP32-S3
 - IMU Quaternion
@@ -408,6 +410,9 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - NT35510 LCD 독립 시험 코드
 - JPEG TCP 수신·RFJF Parser·LCD 출력 프로토타입
 - 서버 더미 JPEG의 ESP32-S3 수신·디코드·LCD 실물 출력
+- BNO085 약 50 Hz Quaternion과 NT35510 LCD 동시 구동
+- 부팅 자세 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동 실물 검증
+- 로컬 통합 시험에서 LCD 색상 깨짐·녹색 줄 없이 동작
 - RFHC v1 52-byte Serializer와 Backend 공유 CRC Vector 일치
 - Python Bridge 테스트 8개, JPEG Protocol Host Test 4개, RFHC Serializer Host Test 6개 통과
 
@@ -429,7 +434,7 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 장치별 RSSI Offset 측정
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
-- BNO085 + 버튼 + JPEG + LCD 단일 Handheld 통합
+- 검증된 BNO085 + LCD 경로에 버튼 + RFHC UDP + 네트워크 JPEG를 연결한 단일 Handheld 통합
 - RFHC Serializer를 50 Hz UDP `ControlTxTask`에 연결
 - 버튼 Event 3 Packet 반복과 `sample_seq`·`event_seq` 관리
 - 최종 장착 방향의 `q_mount` 적용
@@ -547,7 +552,7 @@ HealthTask
 6. Device Offset을 측정한다.
 7. 1~2시간 안정성 시험을 수행한다.
 8. Fault Injection 시험을 수행한다.
-9. `handheld_jpeg_stream`에 BNO085와 버튼 Task를 이식한다.
+9. `handheld_jpeg_stream`의 검증된 BNO085 Task에 버튼 Task를 추가한다.
 10. RFHC Serializer를 UDP `9200`, 50 Hz `ControlTxTask`에 연결한다.
 11. 실제 장치에서 800×480 Frame의 지연·FPS·재연결을 검증한다.
 
