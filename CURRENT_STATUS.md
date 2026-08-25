@@ -1,11 +1,11 @@
 # RFVisualizer 현재 진행 상태
 
-- 기준일: **2026-08-24**
+- 기준일: **2026-08-25**
 - 기준: 각 저장소 `main`과 `/data/RFVisualizer_Workspace`의 최신 실험 산출물
 
 ## 1. 한 줄 요약
 
-3층 복도 장면·RF 분석, RFHC Handheld Control, 3D RF Volume과 JPEG 송신 로컬 프로토타입까지 진행했지만, Graphics 핵심 소스의 Git 반영, 실제 Handheld↔Backend↔Graphics 종단 통합과 최종 논문용 RF 데이터 확보는 남아 있다.
+3층 복도 장면·RF 분석, RFHC Handheld Control, 3D RF Volume과 JPEG 송신, Graphics의 `/handheld/control` Camera 연결까지 구현했지만, 실제 Handheld↔Backend↔Graphics 종단 통합과 최종 논문용 RF 데이터 확보는 남아 있다.
 
 ## 2. 핵심 상태
 
@@ -21,9 +21,10 @@
 | JPEG Image Relay | 구현·테스트 완료 | 실제 Graphics→Handheld 종단 미검증 |
 | Handheld JPEG·LCD | 서버 더미 JPEG 실물 출력 완료 | Graphics producer 종단·지속 성능 미검증 |
 | Handheld BNO085·LCD | 약 50 Hz Quaternion·로컬 3D 시점 이동 실물 검증 | 버튼·UDP·Graphics 통합 미완료 |
-| Handheld Control RFHC v1 | Backend/Embedded 구현·공유 Vector 일치 | 실제 UDP 송신·Graphics 축 미검증 |
+| Handheld Control RFHC v1 | Backend/Embedded 구현·공유 Vector 일치 | 실제 UDP 송신 미검증 |
+| Graphics Handheld Consumer | 구현·C++ Test 통과 | 실제 BNO085 축·버튼·실행 화면 미검증 |
 | 3D RF Volume Bundle | 구현·테스트 완료 | 높이 방향 Residual은 외삽, 논문 근거 불가 |
-| SIBR Heatmap·JPEG Producer | 로컬 프로토타입·빌드 완료 | 핵심 C++ 소스 Git 미반영, 종단 미검증 |
+| SIBR Heatmap·JPEG Producer | C++ 소스 Git 반영·새 Build Directory 빌드 통과 | 실행 화면·종단 미검증 |
 | 최종 논문용 데이터 | 미확정 | `paper_evidence_eligible=false` |
 
 ## 3. 최신 RF 실험 결과
@@ -71,14 +72,16 @@
 - 6개 높이 Sionna Volume과 Viewer Bundle Export 구현
 - Graphics Python 도구 전체 375개 통과, 2개 건너뜀 (`pgsr` 환경, `--import-mode=importlib`)
 - 로컬 SIBR에 RF Volume 합성, Mesh Depth 가림, Offscreen 800×480, RFJF/JPEG 송신 코드와 빌드 결과 존재
+- Backend WebSocket `/handheld/control` 구독과 Camera 자세·Recenter·Position 적용 구현
+- `SIBR_handheld_control_test` 1개(assertion 40여 개) 통과 — Fake Backend WebSocket 포함
+- 새 Build Directory에서 configure·build·CTest 통과
 
 남은 작업:
 
 - 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정
 - 장면 좌표 오차(현재 계획도 기반 약 ±0.5 m)와 Scale 재검증
-- `SIBR_viewers/src/projects/*` ignore 규칙을 수정하고 Graphics 확장 C++ 소스를 Git에 반영
-- 깨끗한 Clone에서 SIBR 재빌드·Heatmap 실제 렌더 검증
-- `/handheld/control` 구독과 Camera 축·Recenter·Position 적용
+- Display가 있는 장비에서 SIBR 실행·Heatmap 실제 렌더 검증
+- 실제 BNO085 축과 `q_mount`의 Yaw·Pitch·Roll 실물 시험
 - Graphics→Relay→Handheld 300초 지속 FPS 검증
 
 ### 임베디드
@@ -133,7 +136,7 @@ magic='RFJF', version=1, flags=0, seq, ts_ms, length
 payload 최대 8 MiB
 ```
 
-Network Relay·Embedded 수신 코드와 Graphics 로컬 sender 프로토타입이 이 규격을 사용한다. 다만 Graphics 핵심 C++ 소스는 아직 Git에 반영되지 않았고 실기기 종단 시험도 없으므로 전체 통합 완료로 보지 않는다. `flags=1` RGB332+zlib 경로는 실험용이며 공통 JPEG 계약에 포함하지 않는다.
+Network Relay·Embedded 수신 코드와 Graphics sender가 이 규격을 사용한다. Graphics C++ 소스는 Git에서 추적되지만 실기기 종단 시험이 없으므로 전체 통합 완료로 보지 않는다. `flags=1` RGB332+zlib 경로는 실험용이며 공통 JPEG 계약에 포함하지 않는다.
 
 ### Handheld Control 기준 구현
 
@@ -147,7 +150,10 @@ sample_seq, event_seq, timestamp_ms, quaternion x/y/z/w, CRC32/IEEE
 500 ms timeout 후 stale
 ```
 
-Backend Parser·Listener와 Embedded Serializer는 구현됐다. 실제 ESP32-S3 UDP 송신, 버튼 Event, `q_mount`, Graphics Camera 축 적용은 아직 통합하지 않았다.
+Backend Parser·Listener, Embedded Serializer, Graphics Consumer는 구현됐다. Graphics는
+`/handheld/control`을 구독해 Camera 자세·Recenter·Position을 적용하며 C++ Test로 검증했다.
+실제 ESP32-S3 UDP 송신, 버튼 Event, `q_mount`와 BNO085 실물 축 시험은 아직 남아 있다.
+WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 
 ### 좌표 관리
 
@@ -160,15 +166,15 @@ Backend Parser·Listener와 Embedded Serializer는 구현됐다. 실제 ESP32-S3
 
 1. **논문 위험:** 분석 수치는 좋아졌지만 누락 구간·BSSID 공란·사후 Offset 부재·잠정 Scene 때문에 최종 근거가 아니다.
 2. **통합 위험:** RFHC와 JPEG의 개별 구성요소는 있으나 Handheld→Backend→Graphics→Relay→Handheld 실제 종단 검증이 없다.
-3. **저장소 위험:** Graphics `main`은 원격과 일치하지만 `SIBR_viewers/src/projects/*` 규칙 때문에 RF Volume/JPEG 핵심 C++ 소스가 모두 무시되고, 재현에 필요한 소스 대신 일부 빌드 실행 파일만 Git에 포함돼 있다.
+3. **환경 위험:** 현재 Workspace에는 Display가 없어 Viewer 실행 화면을 확인할 수 없다. Graphics Handheld 연결은 C++ Test까지만 검증됐고 실제 렌더 화면과 조작감은 미확인이다.
 
 ## 7. 다음 작업
 
 1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 확정하고 Sionna를 다시 실행한다.
 2. 누락된 정방향 Test 1·2와 최소한의 Offset/BSSID 항목만 재측정해 엄격한 10×2 계약을 채운다.
 3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
-4. Graphics의 SIBR RF Volume/JPEG C++ 소스를 Git에 반영하고 깨끗한 Clone에서 재빌드한다.
-5. Graphics가 `/handheld/control`을 구독하고 Camera 축·Recenter·Position을 연결한다.
+4. Display가 있는 장비에서 SIBR를 실행해 Heatmap과 Handheld Camera 동작을 확인한다.
+5. 실제 BNO085로 Yaw·Pitch·Roll 축과 `q_mount`를 확정한다.
 6. Embedded의 검증된 BNO085·LCD 로컬 통합에 버튼·RFHC UDP·네트워크 JPEG 경로를 연결해 단일 Firmware로 통합한다.
 7. Graphics→Relay→Handheld를 연결해 800×480, 300초 지속 FPS를 검증한다.
 

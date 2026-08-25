@@ -661,8 +661,8 @@ Handheld 설정 좌표 Provider 상태:
 - Handheld 관리 API `/handheld/positions`, `/handheld/position/active` 존재
 - 현재 시연 좌표: `pnu_3f_corridor_metric_v1`, `demo-1=(21.40, 17.80, 1.60)`
 - 실제 위치 추정 알고리즘 없음
-- Graphics Viewer와 연결되지 않음
-- Handheld Position Update의 Backend 처리와 accepted/rejected 응답은 구현됐지만 Graphics 적용은 미검증
+- Graphics Viewer의 `/handheld/control` Consumer는 구현·자동 검증 완료, 실기기 종단은 미검증
+- Handheld Position Update의 Backend 처리와 accepted/rejected 응답은 구현됐고, Graphics는 §11.6 규칙으로 적용한다
 
 설정 좌표 Provider는 통합 시연용이며 구현 완료된 위치 추정 알고리즘으로 취급하지 않는다. 좌표 단위는 meter, `+Z`는 위쪽이며 Backend Position과 Graphics Scene의 `frame_id`가 같아야 한다.
 
@@ -670,7 +670,7 @@ Handheld 설정 좌표 Provider 상태:
 
 ## 11. Handheld Control Interface
 
-Embedded와 Backend가 RFHC v1 Wire 규격과 공유 Test Vector를 검증했다. Backend Parser·UDP Listener와 Embedded Serializer는 구현됐으며 실제 ESP32-S3 UDP 송신과 Graphics Camera 축 시험은 남아 있다.
+Embedded와 Backend가 RFHC v1 Wire 규격과 공유 Test Vector를 검증했다. Backend Parser·UDP Listener와 Embedded Serializer는 구현됐고, Graphics의 `/handheld/control` Consumer와 Camera 적용도 구현·자동 검증했다. 실제 ESP32-S3 UDP 송신과 BNO085 실물 축 시험은 남아 있다.
 
 ### 11.1 전송
 
@@ -759,13 +759,52 @@ Embedded Serializer와 Backend Parser Test에서 전체 Byte와 CRC `0x0AE927E5`
 
 ### 11.6 Backend → Graphics
 
-Graphics는 Backend WebSocket `/handheld/control`을 구독해야 한다. Backend 송신 계약은
-구현됐지만 현재 Graphics Consumer와 Camera 적용 코드는 없다.
+Graphics는 Backend WebSocket `/handheld/control`을 구독한다. Transport는 plain `ws://`이고
+Path는 `/handheld/control` 고정이다. Graphics는 application-level Message를 보내지 않는다.
 
-- `handheld_state`: 최신 Quaternion, Sequence, 버튼 Event, stale 상태
-- `position_update`: Position 적용의 accepted/rejected와 거부 이유
+#### Message
+
+`handheld_state`
+
+| 필드 | 형 | 비고 |
+|---|---|---|
+| `type` | string | `"handheld_state"` |
+| `device_id` | string | 현재 Graphics는 `handheld-01`만 받는다 |
+| `session_id`, `sample_seq`, `event_seq` | uint32 | wrap 허용 |
+| `server_timestamp_ms` | integer | |
+| `orientation_valid`, `recenter_event`, `position_update_event`, `stale` | boolean | |
+| `quaternion` | `{x,y,z,w}` finite number | Handheld 논리 축 |
+
+`position_update`
+
+| 필드 | 형 | 비고 |
+|---|---|---|
+| `type` | string | `"position_update"` |
+| `device_id` | string | |
+| `event_seq` | uint32 | 대응하는 `handheld_state`의 `event_seq` |
+| `accepted` | boolean | |
+| `position` | object 또는 null | accepted면 `frame_id`, finite `x`,`y`,`z`, `confidence`, `source` |
+| `reason` | string | rejected일 때 |
+
+Malformed 또는 모르는 Message는 연결을 끊지 않고 경고 후 폐기한다.
+
+#### Graphics 적용 규칙
+
 - Orientation은 Position과 독립적으로 계속 적용한다.
-- Position은 `accepted=true`이고 현재 Scene과 `frame_id`가 같을 때만 적용한다.
+- 새 sample은 `0 < (new_sample_seq - previous_sample_seq) mod 2^32 < 2^31`일 때만 Camera에 반영한다.
+  duplicate와 out-of-order는 버린다. `stale=true`는 같은 `sample_seq`여도 먼저 처리한다.
+- Session이 바뀌면 이전 Session을 물러나게 하고 sample·event 상태를 초기화한다.
+  물러난 Session의 늦은 Packet은 영구 거부한다.
+- Recenter와 Position은 `(device_id, session_id, event_seq, event 종류)`로 각각 중복을 제거한다.
+  버튼 Event의 3회 반복, stale snapshot, 재접속 snapshot에서 최대 한 번만 적용한다.
+- Position은 `position_update` 응답과 `position_update_event=true` state가 **같은 WebSocket
+  연결 안에서** `(connection_epoch, device_id, event_seq)`로 짝지어졌고, `accepted=true`,
+  숫자가 모두 finite, `position.frame_id`가 Scene manifest의 `frameId`와 정확히 같을 때만
+  적용한다. 두 Message의 도착 순서는 어느 쪽이든 지원한다.
+- Position은 Camera translation만 바꾸고 rotation은 보존한다.
+- 연결이 끊기면 완성되지 않은 Position 짝은 버린다. Backend는 `position_update`를
+  cache/replay하지 않으므로 **단절 중 놓친 Position은 복구할 수 없다.**
+- WebSocket 재접속만으로는 Session/Sample/Event 중복 제거 상태를 초기화하지 않는다.
 
 ---
 
@@ -794,7 +833,7 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - Network Relay와 Embedded Parser의 Host Test는 통과했다.
 - 서버 더미 JPEG→ESP32-S3 수신·디코드·NT35510 LCD 실물 출력은 통과했다.
 - Graphics Workspace에는 PBO Readback·JPEG Encoding·RFJF 송신 producer 프로토타입이 있다.
-- 해당 Graphics C++ 소스는 `SIBR_viewers/src/projects/*` ignore 규칙으로 Git에 반영되지 않았다.
+- 해당 Graphics C++ 소스는 `.gitignore`의 `!src/projects/gaussianviewer/**` 예외로 Git에서 추적된다.
 - 실제 Graphics producer→Relay→Handheld 실기기 종단 시험은 아직 완료하지 않았다.
 
 남은 확정 항목:

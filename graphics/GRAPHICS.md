@@ -347,6 +347,7 @@ XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
 - Offscreen 800×480 Framebuffer
 - PBO Readback, JPEG Encoding, RFJF 22-byte Header
 - TCP `9101` 송신과 최신 Frame 1개 Queue
+- Backend WebSocket `/handheld/control` 구독과 Camera 자세·Position 적용
 
 실행 인자:
 
@@ -360,19 +361,40 @@ XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
 --jpeg-quality 80
 --run-seconds <seconds>
 --metrics-json <path>
+--handheld-host <backend-host>
+--handheld-port 8000
 ```
 
-그러나 `gaussian-splatting/SIBR_viewers/.gitignore`의 `src/projects/*` 규칙 때문에
-`RFVolumeRenderer`, `JpegStreamer`, 수정된 `GaussianView`와 `main.cpp`가 모두 Git에서
-무시된다. 일부 빌드 실행 파일만 원격 `main`에 있어 깨끗한 Clone에서 재빌드할 수 없다.
-따라서 현재 상태는 **로컬 프로토타입**이며 팀 재현 가능한 구현 완료가 아니다.
+`--handheld-host`는 `--rf-volume`을 함께 줘야 한다. Position Update를 검증·변환할 manifest의
+`frameId`와 `T_scene_from_metric`이 없으면 시작 오류로 종료한다.
 
-### 8.3 아직 없는 연결
+`gaussian-splatting/SIBR_viewers/.gitignore`에 `!src/projects/gaussianviewer/**` 예외가 있어
+`RFVolumeRenderer`, `JpegStreamer`, `HandheldControlClient`, 수정된 `GaussianView`와 `main.cpp`는
+현재 Git에서 추적된다. 새 Build Directory에서 configure·build가 통과하는 것을 확인했다.
 
-- Backend WebSocket `/handheld/control` 구독
-- Quaternion→Graphics Camera 축 변환
-- Recenter와 Position Update 적용
+### 8.3 Handheld Camera 연결
+
+구현·자동 검증 완료:
+
+- `HandheldControlClient` — Boost.Beast WebSocket Worker + Session/Sample/Event Reducer
+- Camera 자세 적용: `q_camera = q_camera_anchor * inverse(q_device_anchor) * normalize(q_device)`
+- Recenter: 그 Frame에 화면이 튀지 않고, 이후 움직임부터 새 기준을 쓴다
+- Position: `T_scene_from_metric`으로 Gaussian Scene 좌표로 옮겨 translation만 바꾼다
+- Handheld 활성 중 Camera Handler는 `NONE`, 비활성이면 기존 FPS로 되돌린다
+- FPS 복귀 조건: 인자 없음, 연결 전, WebSocket 단절, Backend `stale=true`,
+  마지막 유효 자세 이후 750 ms 경과
+- `SIBR_handheld_control_test` (CTest `handheld_control`) — 같은 실행 파일 안의 Boost.Beast
+  Fake Backend로 계약 검증, 중복 제거, 재접속, 종료 시간까지 확인
+
+아직 없는 검증:
+
+- 실제 BNO085 축과 `q_mount`의 Yaw·Pitch·Roll 실물 시험
+- Embedded 버튼 송신 (현재 미구현)
 - 실제 Relay→Handheld 300초 지속 성능 검증
+- Viewer 실행 화면 확인 — 이 Workspace에는 Display가 없어 GLFW가 초기화되지 않는다
+
+WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다. Backend가 `position_update`를
+cache/replay하지 않기 때문이며, Graphics는 가짜 복구를 하지 않는다.
 
 ### 현재 Render·송신 흐름
 
@@ -390,7 +412,20 @@ JpegStreamer Worker
 ```
 
 현재 Encoder와 TCP 송신은 하나의 Worker Thread에서 처리한다. CPU Queue는 최신 Frame
-1개만 유지하고 처리하지 못한 오래된 Frame은 폐기한다. Pose Receiver는 아직 없다.
+1개만 유지하고 처리하지 못한 오래된 Frame은 폐기한다.
+
+Handheld Pose는 별도 Worker Thread가 받아 Mailbox에 넣고, Render Thread가 매 Frame 다음
+순서로 소비한다. Camera 객체는 Worker Thread가 절대 만지지 않는다.
+
+```text
+Handheld Worker (WebSocket)        Render Thread
+  ├─ /handheld/control read          ├─ Mailbox drain (non-blocking)
+  ├─ 계약 검증·중복 제거             ├─ stale/timeout 판정
+  └─ 최신 Pose 1개 + Event Edge ≤16  ├─ Recenter·Position Edge 적용
+     (Mutex 하나 아래)               ├─ Camera pose 계산
+                                     ├─ fromTransform(..., false, false)
+                                     └─ onUpdate → render
+```
 
 ## 9. 현재 구현 상태
 
@@ -423,12 +458,13 @@ JpegStreamer Worker
 - 분석 결과: Residual IDW MAE 3.52 dB, 단 `paper_evidence_eligible=false`
 - SIBR RF Volume·Depth 가림·Offscreen Rendering
 - JPEG Encoding·RFJF TCP Streaming
-- 위 C++ 소스의 Git 반영과 깨끗한 Clone 재빌드
+- `/handheld/control` WebSocket Consumer와 Camera 축·Recenter·Position 적용
+  (C++ Test는 통과, 실행 화면은 Display가 없어 미확인)
 
-### 아직 미구현
+### 아직 미구현·미검증
 
-- `/handheld/control` WebSocket Consumer
-- IMU Camera 축 변환·Recenter·Position Update
+- 실제 BNO085 축과 `q_mount` 실물 시험
+- Embedded 버튼 Event 송신
 - Graphics→Relay→Handheld 실기기 종단 검증
 
 ## 10. 다음 작업
@@ -436,9 +472,8 @@ JpegStreamer Worker
 1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정한다.
 2. 누락된 정방향 Test 1·2와 Offset/BSSID를 최소 재측정한다.
 3. Sionna/IDW/Residual 분석을 재실행하고 논문 근거 사용 가능 여부를 판정한다.
-4. SIBR `src/projects/gaussianviewer`를 Git ignore 예외로 등록하고 소스만 Commit한다.
-5. 깨끗한 Clone에서 SIBR를 재빌드하고 RF Volume 실제 Frame을 확인한다.
-6. `/handheld/control`을 Camera에 연결한 뒤 Relay→Handheld 300초 시험을 수행한다.
+4. Display가 있는 장비에서 SIBR를 실행해 RF Volume 실제 Frame과 Handheld Camera 동작을 확인한다.
+5. 실제 BNO085로 Yaw·Pitch·Roll 축을 확인하고 Relay→Handheld 300초 시험을 수행한다.
 
 ## 11. 미확정 항목
 
