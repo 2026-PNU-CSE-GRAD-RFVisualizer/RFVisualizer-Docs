@@ -808,7 +808,7 @@ Malformed 또는 모르는 Message는 연결을 끊지 않고 경고 후 폐기�
 
 ---
 
-## 12. JPEG Frame Streaming Interface
+## 12. RFJF Frame Streaming Interface
 
 Network `image_relay`와 Embedded Handheld 수신 프로토타입이 사용하는 **기준 구현**이다.
 정수는 모두 big-endian이며 producer→relay와 relay→viewer가 같은 Frame을 사용한다.
@@ -819,26 +819,47 @@ Graphics ─TCP 9101─▶ image_relay ─TCP 9102─▶ Handheld / Viewer
 22-byte 고정 Header
 magic   uint32  0x52464A46 ('RFJF')
 version uint8   1
-flags   uint8   0 (JPEG)
+flags   uint8   0 = JPEG, 1 = RGB332+zlib
 seq     uint32  Frame마다 1 증가
 ts_ms   uint64  Unix Epoch millisecond
-length  uint32  JPEG Payload 길이
-payload bytes   length만큼의 JPEG, 최대 8 MiB
+length  uint32  Payload 길이
+payload bytes   length만큼의 Payload, 최대 8 MiB
 ```
+
+Header는 두 형식이 완전히 같고 `flags`만 다르다. Relay는 `flags`를 해석하지 않고
+그대로 보존해 전달한다.
+
+### 12.1 `flags=1` RGB332+zlib (현재 기본 경로)
+
+- 화면 크기는 Handheld LCD 기준 **정확히 800×480**이다. Producer는 다른 해상도로 이 형식을
+  시작하지 않는다.
+- 압축 전 Payload는 픽셀당 1 byte `RRRGGGBB`, row-major, 위에서 아래로 **정확히 384,000 byte**다.
+  bit 배치는 `red & 0xE0 | (green & 0xE0) >> 3 | blue >> 6`이다.
+  순수 Red는 `0xE0`, Green은 `0x1C`, Blue는 `0x03`, White는 `0xFF`다.
+- 전송 Payload는 이 384,000 byte를 **표준 `zlib` Stream**(RFC 1950)으로 압축한 것이다.
+  Producer는 `Z_BEST_SPEED`를 쓰지만 수신 측은 압축 수준에 의존하지 않는다.
+- 수신 측은 해제 결과가 384,000 byte가 아니면 그 Frame을 버린다.
+
+### 12.2 `flags=0` JPEG (예비 경로)
+
+- Payload는 JPEG Baseline Stream이다. 해상도 제약은 없고 권장값은 같은 800×480이다.
+- RGB332 경로에 문제가 있을 때 형식만 바꿔 같은 Header로 보낸다.
+
+### 12.3 공통 규칙
 
 - Header 위반 또는 8 MiB 초과 Frame은 연결을 끊고 재접속으로 복구한다.
 - 느린 Viewer는 오래된 Frame을 버리고 최신 완성 Frame을 우선한다.
-- 권장 출력 해상도는 Handheld 화면 기준 800×480이다.
-- `flags=1` RGB332+zlib는 실험용이며 이 공통 JPEG 계약에 포함하지 않는다.
+  최신 Frame 우선 정책에서 생기는 `seq` 건너뜀은 정상이다.
 - Network Relay와 Embedded Parser의 Host Test는 통과했다.
 - 서버 더미 JPEG→ESP32-S3 수신·디코드·NT35510 LCD 실물 출력은 통과했다.
-- Graphics Workspace에는 PBO Readback·JPEG Encoding·RFJF 송신 producer 프로토타입이 있다.
+- Graphics Workspace에는 PBO Readback·형식별 Encoding·RFJF 송신 producer가 있고,
+  RGB332 변환·zlib round-trip·Header 계약은 `SIBR_frame_codec_test`로 검증한다.
 - 해당 Graphics C++ 소스는 `.gitignore`의 `!src/projects/gaussianviewer/**` 예외로 Git에서 추적된다.
 - 실제 Graphics producer→Relay→Handheld 실기기 종단 시험은 아직 완료하지 않았다.
 
 남은 확정 항목:
 
-- JPEG Quality와 실제 목표 FPS
+- 실제 목표 FPS와 (예비 경로를 쓸 때의) JPEG Quality
 - 수신 Timeout과 장치별 재연결 정책
 - ESP32-S3 Buffer 크기와 실제 LCD Throughput
 
@@ -862,7 +883,7 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - WebSocket Frame
 - PositionEstimate
 - Handheld Packet
-- JPEG Frame Protocol
+- RFJF Frame Protocol (JPEG와 RGB332+zlib)
 
 변경 절차:
 
@@ -890,4 +911,4 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - PositionEstimate 알고리즘
 - BNO085 실제 장착 변환 `q_mount`와 Graphics Camera 축 변환
 - Graphics C++ 소스 Git 반영과 깨끗한 Clone 재빌드
-- JPEG 실기기 종단 연동과 300초 성능값
+- RFJF 실기기 종단 연동과 300초 성능값
