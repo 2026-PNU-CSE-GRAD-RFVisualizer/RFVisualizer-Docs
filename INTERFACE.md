@@ -780,7 +780,7 @@ Graphics ─TCP 9101─▶ image_relay ─TCP 9102─▶ Handheld / Viewer
 22-byte 고정 Header
 magic   uint32  0x52464A46 ('RFJF')
 version uint8   1
-flags   uint8   0 (JPEG)
+flags uint8 0=JPEG, 1=RGB332+zlib
 seq     uint32  Frame마다 1 증가
 ts_ms   uint64  Unix Epoch millisecond
 length  uint32  JPEG Payload 길이
@@ -790,7 +790,7 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - Header 위반 또는 8 MiB 초과 Frame은 연결을 끊고 재접속으로 복구한다.
 - 느린 Viewer는 오래된 Frame을 버리고 최신 완성 Frame을 우선한다.
 - 권장 출력 해상도는 Handheld 화면 기준 800×480이다.
-- `flags=1` RGB332+zlib는 실험용이며 이 공통 JPEG 계약에 포함하지 않는다.
+- **`flags=1` RGB332+zlib 는 Handheld 10 FPS 영상의 채택 규격이다** (flags=0 baseline JPEG 는 단일 이미지·안정성 경로로 유지). 800×480, 1 byte/pixel RGB332 (`rgb332 = (R & 0xE0) | ((G >> 3) & 0x1C) | (B >> 6)`), row-major·stride 없음, 압축 전 정확히 384,000 byte 를 zlib(RFC1950) level 1 로 압축한 payload. Relay 는 flags 를 해석하지 않고 22-byte header + length payload 를 그대로 viewer(9102)로 중계한다.
 - Network Relay와 Embedded Parser의 Host Test는 통과했다.
 - 서버 더미 JPEG→ESP32-S3 수신·디코드·NT35510 LCD 실물 출력은 통과했다.
 - Graphics Workspace에는 PBO Readback·JPEG Encoding·RFJF 송신 producer 프로토타입이 있다.
