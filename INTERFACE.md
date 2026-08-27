@@ -769,7 +769,7 @@ Graphics는 Backend WebSocket `/handheld/control`을 구독해야 한다. Backen
 
 ---
 
-## 12. JPEG Frame Streaming Interface
+## 12. RFJF Frame Streaming Interface
 
 Network `image_relay`와 Embedded Handheld 수신 프로토타입이 사용하는 **기준 구현**이다.
 정수는 모두 big-endian이며 producer→relay와 relay→viewer가 같은 Frame을 사용한다.
@@ -780,26 +780,80 @@ Graphics ─TCP 9101─▶ image_relay ─TCP 9102─▶ Handheld / Viewer
 22-byte 고정 Header
 magic   uint32  0x52464A46 ('RFJF')
 version uint8   1
-flags uint8 0=JPEG, 1=RGB332+zlib
+flags   uint8   0 = JPEG, 1 = RGB332+zlib, 2 = 팔레트256+zlib
 seq     uint32  Frame마다 1 증가
 ts_ms   uint64  Unix Epoch millisecond
-length  uint32  JPEG Payload 길이
-payload bytes   length만큼의 JPEG, 최대 8 MiB
+length  uint32  Payload 길이
+payload bytes   length만큼의 Payload, 최대 8 MiB
 ```
+
+Header는 세 형식이 완전히 같고 `flags`만 다르다. Relay는 `flags`를 해석하지 않고
+22-byte Header와 length만큼의 Payload를 그대로 viewer(9102)로 중계한다.
+
+### 12.1 `flags=1` RGB332+zlib (현재 채택 규격)
+
+**Handheld 10 FPS 영상의 채택 규격이다.**
+
+- 화면 크기는 Handheld LCD 기준 **정확히 800×480**이다. Producer는 다른 해상도로 이 형식을
+  시작하지 않는다.
+- 압축 전 Payload는 픽셀당 1 byte RGB332, row-major, stride 없음, 위에서 아래로
+  **정확히 384,000 byte**다. bit 배치는 `rgb332 = (R & 0xE0) | ((G >> 3) & 0x1C) | (B >> 6)`이다.
+  순수 Red는 `0xE0`, Green은 `0x1C`, Blue는 `0x03`, White는 `0xFF`다.
+- 전송 Payload는 이 384,000 byte를 **표준 `zlib` Stream**(RFC 1950) level 1로 압축한 것이다.
+  수신 측은 압축 수준에 의존하지 않는다.
+- 수신 측은 해제 결과가 384,000 byte가 아니면 그 Frame을 버린다.
+- Producer는 Bayer Ordered Dithering을 걸 수 있다. 픽셀 값만 달라지고 크기·배치·`flags`는
+  그대로이므로 **수신 측 계약에는 영향이 없다**.
+
+### 12.2 `flags=0` JPEG (단일 이미지·안정성 경로)
+
+- Payload는 JPEG Baseline Stream이다. 해상도 제약은 없고 권장값은 같은 800×480이다.
+- 단일 이미지 전송과 안정성 확인 경로로 유지한다.
+- **10 FPS를 목표로 하는 실시간 영상 경로로는 쓰지 않는다.** ESP32-S3의 소프트웨어 JPEG
+  디코드는 800×480에서 Frame당 수백 ms가 걸린다. 실측에서 Quality를 10부터 100까지 바꿔도
+  표시율은 약 2 FPS로 같았다. 디코드 비용이 압축률이 아니라 픽셀 수에 비례하기 때문이다.
+
+### 12.3 `flags=2` 팔레트 256색+zlib (전환 대상)
+
+장면에서 고른 256색 팔레트를 Frame마다 함께 실어 보낸다. 픽셀당 1 byte와 수신 측
+확장 비용은 `flags=1`과 같고, 고정 3-3-2 대신 장면에 실제로 있는 색을 쓴다.
+
+- 화면 크기는 `flags=1`과 같이 **정확히 800×480**이다.
+- 압축 전 Payload는 팔레트와 인덱스를 이어 붙인 **정확히 384,512 byte**다.
+
+```text
+offset      0   512 B       팔레트 256 entry, entry당 uint16 RGB565 big-endian
+offset    512   384,000 B   인덱스, 픽셀당 1 byte, row-major, 위에서 아래로
+합계            384,512 byte
+```
+
+- 팔레트 `entry[i]`가 인덱스 값 `i`의 색이다. RGB565 bit 배치는 `r5 << 11 | g6 << 5 | b5`다.
+- 전송 Payload는 이 384,512 byte를 **표준 `zlib` Stream**(RFC 1950) level 1로 압축한 것이다.
+- 수신 측은 해제 결과가 384,512 byte가 아니면 그 Frame을 버린다.
+- **팔레트는 모든 Frame에 들어간다.** Producer가 세션 내내 같은 값을 보내더라도 수신 측은
+  Frame마다 읽어야 한다. Relay는 상태를 갖지 않으므로 수신자가 중간에 붙거나 재접속할 수
+  있고, 그때도 Frame 하나만으로 색을 복원할 수 있어야 한다.
+- 수신 측은 팔레트가 Frame마다 바뀔 수 있다고 가정한다. Producer의 갱신 정책은 계약이 아니다.
+- 상태: **합의 대상. Graphics 구현 진행 중이며 실기기 검증은 하지 않았다.**
+
+### 12.4 공통 규칙
 
 - Header 위반 또는 8 MiB 초과 Frame은 연결을 끊고 재접속으로 복구한다.
 - 느린 Viewer는 오래된 Frame을 버리고 최신 완성 Frame을 우선한다.
-- 권장 출력 해상도는 Handheld 화면 기준 800×480이다.
-- **`flags=1` RGB332+zlib 는 Handheld 10 FPS 영상의 채택 규격이다** (flags=0 baseline JPEG 는 단일 이미지·안정성 경로로 유지). 800×480, 1 byte/pixel RGB332 (`rgb332 = (R & 0xE0) | ((G >> 3) & 0x1C) | (B >> 6)`), row-major·stride 없음, 압축 전 정확히 384,000 byte 를 zlib(RFC1950) level 1 로 압축한 payload. Relay 는 flags 를 해석하지 않고 22-byte header + length payload 를 그대로 viewer(9102)로 중계한다.
+  최신 Frame 우선 정책에서 생기는 `seq` 건너뜀은 정상이다.
 - Network Relay와 Embedded Parser의 Host Test는 통과했다.
 - 서버 더미 JPEG→ESP32-S3 수신·디코드·NT35510 LCD 실물 출력은 통과했다.
-- Graphics Workspace에는 PBO Readback·JPEG Encoding·RFJF 송신 producer 프로토타입이 있다.
-- 해당 Graphics C++ 소스는 `SIBR_viewers/src/projects/*` ignore 규칙으로 Git에 반영되지 않았다.
-- 실제 Graphics producer→Relay→Handheld 실기기 종단 시험은 아직 완료하지 않았다.
+- `flags=1` 경로의 Graphics producer→Relay→Handheld 실기기 종단 연동은 통과했다.
+  렌더 송신과 `/handheld/control` IMU 회전을 동시에 구동했다.
+- Graphics Workspace에는 PBO Readback·형식별 Encoding·RFJF 송신 producer가 있고,
+  RGB332 변환·zlib round-trip·Header 계약은 `SIBR_frame_codec_test`로 검증한다.
+- 해당 Graphics C++ 소스는 `.gitignore`의 `!src/projects/gaussianviewer/**` 예외로
+  Git에서 추적된다.
 
 남은 확정 항목:
 
-- JPEG Quality와 실제 목표 FPS
+- 300초 지속 성능값과 형식별 표시율
+- `flags=2` 팔레트256 형식의 실기기 검증과 Dithering 강도 확정
 - 수신 Timeout과 장치별 재연결 정책
 - ESP32-S3 Buffer 크기와 실제 LCD Throughput
 
@@ -823,7 +877,7 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - WebSocket Frame
 - PositionEstimate
 - Handheld Packet
-- JPEG Frame Protocol
+- RFJF Frame Protocol (JPEG · RGB332+zlib · 팔레트256+zlib)
 
 변경 절차:
 
@@ -851,4 +905,5 @@ payload bytes   length만큼의 JPEG, 최대 8 MiB
 - PositionEstimate 알고리즘
 - BNO085 실제 장착 변환 `q_mount`와 Graphics Camera 축 변환
 - Graphics C++ 소스 Git 반영과 깨끗한 Clone 재빌드
-- JPEG 실기기 종단 연동과 300초 성능값
+- RFJF 300초 지속 성능값과 형식별 표시율
+- `flags=2` 팔레트256 형식의 실기기 검증
