@@ -357,7 +357,9 @@ XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
 --rf-heatmap-off
 --stream-host <relay-host>
 --stream-port 9101
---stream-fps 12
+--stream-fps 10
+--stream-format rgb332-zlib|jpeg
+--stream-dither 0.4
 --jpeg-quality 80
 --run-seconds <seconds>
 --metrics-json <path>
@@ -369,7 +371,7 @@ XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
 `frameId`와 `T_scene_from_metric`이 없으면 시작 오류로 종료한다.
 
 `gaussian-splatting/SIBR_viewers/.gitignore`에 `!src/projects/gaussianviewer/**` 예외가 있어
-`RFVolumeRenderer`, `JpegStreamer`, `HandheldControlClient`, 수정된 `GaussianView`와 `main.cpp`는
+`RFVolumeRenderer`, `FrameStreamer`, `FrameCodec`, `HandheldControlClient`, 수정된 `GaussianView`와 `main.cpp`는
 현재 Git에서 추적된다. 새 Build Directory에서 configure·build가 통과하는 것을 확인했다.
 
 ### 8.3 Handheld Camera 연결
@@ -405,11 +407,15 @@ Render Thread
   ├─ 3D RF Volume Ray Marching·Alpha Composite
   └─ PBO 비동기 Readback
           ↓ 최신 CPU Frame 1개
-JpegStreamer Worker
+FrameStreamer Worker
   ├─ 화면 Flip·범례·PROVISIONAL·FPS Overlay
-  ├─ JPEG Encoding
+  ├─ 형식별 Encoding (RGB332+zlib 기본, JPEG 예비)
   └─ RFJF Header + TCP 송신·재연결
 ```
+
+형식 변환과 RFJF Header packing은 GL·OpenCV에 의존하지 않는 `FrameCodec.hpp` 한 곳에 있고
+`SIBR_frame_codec_test`가 검증한다. `--stream-format rgb332-zlib`은 렌더 해상도가 정확히
+800×480이 아니면 시작 전에 오류로 멈춘다.
 
 현재 Encoder와 TCP 송신은 하나의 Worker Thread에서 처리한다. CPU Queue는 최신 Frame
 1개만 유지하고 처리하지 못한 오래된 Frame은 폐기한다.
