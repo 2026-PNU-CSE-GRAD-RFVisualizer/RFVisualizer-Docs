@@ -434,11 +434,9 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 장치별 RSSI Offset 측정
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
-- 검증된 BNO085 + LCD 경로에 버튼 + RFHC UDP + 네트워크 JPEG를 연결한 단일 Handheld 통합
-- RFHC Serializer를 50 Hz UDP `ControlTxTask`에 연결
+- 단일 Handheld Firmware에 버튼 Task 추가
 - 버튼 Event 3 Packet 반복과 `sample_seq`·`event_seq` 관리
-- 최종 장착 방향의 `q_mount` 적용
-- 실제 Graphics Frame으로 800×480 JPEG 수신·디코드·표시 지속 속도
+- 실제 Graphics Frame으로 800×480 palette256 수신·표시의 300초 지속 속도 계측
 
 ## 11. 핸드헬드 하드웨어 계획
 
@@ -457,8 +455,8 @@ PSRAM: 8 MB
 - IMU 읽기
 - Quaternion 전송
 - 버튼 이벤트 전송
-- JPEG Frame 수신
-- JPEG 디코딩
+- RFJF Frame 수신
+- zlib 해제와 palette lookup 또는 JPEG 디코딩
 - LCD 출력
 
 3DGS 렌더링, Sionna RT, 위치 추정 알고리즘은 PC 또는 Backend에서 실행한다.
@@ -484,11 +482,11 @@ RGB565 전체 Frame 크기:
 기본 Buffer 전략:
 
 ```text
-JPEG Buffer A/B
+RFJF Compressed Buffer A/B
         ↓
-JPEG Decode
+flags=2 zlib 해제 + RGB565 Palette Lookup
         ↓
-RGB565 Line/Tile Buffer A/B
+RGB666 Panel DMA Tile Buffer
         ↓
 LCD GRAM
 ```
@@ -512,7 +510,7 @@ ImuTask
 ControlTxTask
 InputTask
 VideoRxTask
-JpegDecodeTask
+IndexedInflateTask / JpegDecodeTask
 DisplayTask
 ConnectionTask
 HealthTask
@@ -524,7 +522,8 @@ HealthTask
 - `INTERFACE.md`의 RFHC v1로 Backend UDP `9200`에 50 Hz 전송
 - Recenter 버튼 지원
 - Yaw Drift는 실제 장치 시험 후 처리 방식 결정
-- Wire Quaternion에는 실제 장착 변환 `q_mount`를 반영
+- 현재 장착은 Embedded `q_mount=identity`와 Graphics 고정 축 변환 조합으로 Yaw·Pitch·Roll 방향/부호 검증 완료
+- 센서 장착 방향 변경 시 `q_mount` 또는 Graphics 고정 변환 재검증
 
 ### Position
 
@@ -536,11 +535,15 @@ HealthTask
 
 ### Video
 
-- TCP 기반 JPEG Frame 수신
+- TCP 기반 RFJF Frame 수신
+- 기본 형식은 `flags=2` palette256+zlib, `flags=0/1`은 호환·진단용
+- 해제 결과 384,512 byte 검증 후 512-byte RGB565 BE 팔레트를 Frame마다 다시 읽음
 - 최신 완성 Frame 우선
-- 디코딩이 느릴 경우 오래된 Frame 폐기
+- 해제·출력이 느릴 경우 오래된 Frame 폐기
 - 최소 목표 5 FPS
 - 도전 목표 10 FPS
+
+2026-08-27 Graphics→Relay/Proxy→ESP32-S3→NT35510 실기 출력과 RGB332 대비 화질 개선을 확인했다. 정량 FPS·지연·drop과 장시간 안정성은 아직 계측하지 않았다.
 
 ## 13. 다음 작업
 
@@ -552,16 +555,13 @@ HealthTask
 6. Device Offset을 측정한다.
 7. 1~2시간 안정성 시험을 수행한다.
 8. Fault Injection 시험을 수행한다.
-9. `handheld_jpeg_stream`의 검증된 BNO085 Task에 버튼 Task를 추가한다.
-10. RFHC Serializer를 UDP `9200`, 50 Hz `ControlTxTask`에 연결한다.
-11. 실제 장치에서 800×480 Frame의 지연·FPS·재연결을 검증한다.
+9. `handheld_jpeg_stream`에 Position Update/Recenter 버튼 Task를 추가한다.
+10. 버튼 Event 3 Packet 반복과 `event_seq`를 구현한다.
+11. 실제 장치에서 800×480 palette256 Frame의 지연·FPS·재연결을 300초 이상 검증한다.
 
 ## 14. 미확정 항목
 
 - 최종 핸드헬드 Position 추정 알고리즘
-- BNO085의 최종 장착 방향과 좌표축 변환
-- JPEG 확장 flags 사용 여부 (`flags=0` JPEG만 공통 계약)
-- JPEG Quality
 - LCD 실제 Throughput
 - LCD Pin Mapping
 - 배터리와 전력 관리
