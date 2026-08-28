@@ -185,7 +185,7 @@ Handheld RFHC v1 ─UDP 9200─▶ Parser/Session Tracker
 
 - `handheld_enabled=false`가 기본값
 - 실제 ESP32-S3 UDP 송신 미연결
-- Graphics의 `/handheld/control` Consumer 미구현
+- Graphics의 `/handheld/control` Consumer는 구현·C++ Test 통과했으나 실제 BNO085 축·실행 화면 미검증
 - Camera 축·Recenter·Position 종단 시험 미완료
 
 ## 14. 설정 (`config.py` / `.env`)
@@ -230,8 +230,10 @@ py rehearsal.py --reverse         # 사전·사후 offset + 정+역 in-process �
 - **실물 확인 완료**: MQTT 수신(브로커+load_test+백엔드), 새 UI 로드.
 - **미검증**: 실센서 5대 정방향 전체 리허설, 브라우저 새로고침/MQTT 재연결/Backend 중단의 실동작.
 - **별도 구현·검증 완료**: RFJF 22-byte Frame 기반 `image_relay`와 Host Test 8개.
-- **미구현·미통합**: 실제 Position 추정, Handheld 실기기 UDP, Graphics Handheld Consumer, 전체 Viewer 종단 통합.
-- **로컬 외부 상태**: Graphics JPEG producer 프로토타입은 Workspace에 있으나 핵심 C++ 소스가 Git에 반영되지 않았고 Relay 종단 시험도 없다.
+- **미구현·미통합**: 실제 Position 추정, Handheld 실기기 UDP 송신, 전체 Viewer 종단 통합.
+- **Graphics 영상 경로 갱신(2026-08-27)**: RFJF Producer C++ 소스는 Git에 반영됐고,
+  `flags=1`(RGB332)·`flags=2`(팔레트256, 현재 기본) 모두 Graphics→Relay→ESP32-S3 LCD
+  실기기 종단 출력을 확인했다. 300초 지속 성능은 아직 계측하지 않았다.
 
 ## 18. 공통 계약
 

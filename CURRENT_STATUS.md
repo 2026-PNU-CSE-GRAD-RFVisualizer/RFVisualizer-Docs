@@ -1,11 +1,11 @@
 # RFVisualizer 현재 진행 상태
 
-- 기준일: **2026-08-25**
+- 기준일: **2026-08-28**
 - 기준: 각 저장소 `main`과 `/data/RFVisualizer_Workspace`의 최신 실험 산출물
 
 ## 1. 한 줄 요약
 
-3층 복도 장면·RF 분석, RFHC Handheld Control, 3D RF Volume과 JPEG 송신, Graphics의 `/handheld/control` Camera 연결까지 구현했지만, 실제 Handheld↔Backend↔Graphics 종단 통합과 최종 논문용 RF 데이터 확보는 남아 있다.
+3층 복도 장면·RF 분석, RFHC Handheld Control, 3D RF Volume과 RFJF(palette256 기본) 영상 송신, Graphics의 `/handheld/control` Camera 연결까지 구현했고 2026-08-27에 Graphics→Relay→ESP32-S3→LCD 영상 실기기 종단 출력을 확인했다. 남은 건 영상 경로 정량 성능(300초 FPS·지연), RFHC(자세·버튼) 실기기 UDP 종단 통합, 최종 논문용 RF 데이터 확보다.
 
 ## 2. 핵심 상태
 
@@ -18,13 +18,13 @@
 | 2026-08-21 Lounge 측정 | 분석 가능 | 정방향 8 + 역방향 10 = 18구간 |
 | 엄격한 10×2 계약 | 미충족 | 정방향 Test 1·2 누락 |
 | Network Backend | Export/QC/복구 로직 검증 | 실센서 전체 리허설은 미검증 |
-| JPEG Image Relay | 구현·테스트 완료 | 실제 Graphics→Handheld 종단 미검증 |
-| Handheld JPEG·LCD | 서버 더미 JPEG 실물 출력 완료 | Graphics producer 종단·지속 성능 미검증 |
-| Handheld BNO085·LCD | 약 50 Hz Quaternion·로컬 3D 시점 이동 실물 검증 | 버튼·UDP·Graphics 통합 미완료 |
+| RFJF Image Relay | 구현·테스트 완료 | Graphics→Handheld 실기기 종단 확인(8/27), 300초 지속 성능 미검증 |
+| Handheld RFJF·LCD | palette256/RGB332 Graphics producer→Relay→LCD 실기기 종단 출력 확인(8/27) | 300초 지속 FPS·지연·drop 미계측 |
+| Handheld BNO085·LCD | 약 50 Hz Quaternion·로컬 3D 시점 이동 실물 검증 | 버튼·RFHC UDP·Graphics 통합 미완료 |
 | Handheld Control RFHC v1 | Backend/Embedded 구현·공유 Vector 일치 | 실제 UDP 송신 미검증 |
 | Graphics Handheld Consumer | 구현·C++ Test 통과 | 실제 BNO085 축·버튼·실행 화면 미검증 |
 | 3D RF Volume Bundle | 구현·테스트 완료 | 높이 방향 Residual은 외삽, 논문 근거 불가 |
-| SIBR Heatmap·JPEG Producer | C++ 소스 Git 반영·새 Build Directory 빌드 통과 | 실행 화면·종단 미검증 |
+| SIBR RF Volume·영상 Producer | C++ 소스 Git 반영, palette256 기본 전환, 새 Build Directory 빌드 통과 | Viewer 실행 화면(Display 필요)·300초 지속 성능 미검증 |
 | 최종 논문용 데이터 | 미확정 | `paper_evidence_eligible=false` |
 
 ## 3. 최신 RF 실험 결과
@@ -71,10 +71,13 @@
 - Backend Export 입력, 동시간 Calibration 매칭, Sionna/IDW/Residual 비교
 - 6개 높이 Sionna Volume과 Viewer Bundle Export 구현
 - Graphics Python 도구 전체 375개 통과, 2개 건너뜀 (`pgsr` 환경, `--import-mode=importlib`)
-- 로컬 SIBR에 RF Volume 합성, Mesh Depth 가림, Offscreen 800×480, RFJF/JPEG 송신 코드와 빌드 결과 존재
+- 로컬 SIBR에 RF Volume 합성, Mesh Depth 가림, Offscreen 800×480, RFJF(palette256/RGB332/JPEG) 송신 코드와 빌드 결과 존재
+- `PaletteChooser`(장면 팔레트 자동 선정, 재선정), RGB332 Bayer Ordered Dithering
 - Backend WebSocket `/handheld/control` 구독과 Camera 자세·Recenter·Position 적용 구현
 - `SIBR_handheld_control_test` 1개(assertion 40여 개) 통과 — Fake Backend WebSocket 포함
 - 새 Build Directory에서 configure·build·CTest 통과
+- **2026-08-27 실기기 확인**: Graphics→Relay→ESP32-S3→NT35510 LCD RFJF 영상 종단 출력
+  (`flags=1` RGB332, `flags=2` palette256 둘 다), palette256이 화질 우위
 
 남은 작업:
 
@@ -82,7 +85,7 @@
 - 장면 좌표 오차(현재 계획도 기반 약 ±0.5 m)와 Scale 재검증
 - Display가 있는 장비에서 SIBR 실행·Heatmap 실제 렌더 검증
 - 실제 BNO085 축과 `q_mount`의 Yaw·Pitch·Roll 실물 시험
-- Graphics→Relay→Handheld 300초 지속 FPS 검증
+- Graphics→Relay→Handheld 300초 지속 FPS·지연·drop 정량 검증
 
 ### 임베디드
 
@@ -96,13 +99,15 @@
 - 서버 더미 JPEG의 TCP 수신·디코드·NT35510 LCD 실물 출력 완료
 - BNO085와 NT35510 LCD 동시 구동, 부팅 자세 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동 실물 검증
 - 로컬 통합 시험에서 BNO085 약 50 Hz를 유지했고 LCD 색상 깨짐·녹색 줄 없이 동작함
+- **2026-08-27**: 실제 Graphics Frame(palette256 기본, RGB332 호환)의 ESP32-S3→NT35510 LCD
+  종단 출력 확인, RGB332 대비 화질 개선 확인. 정량 FPS·지연·장시간 안정성은 미계측
 
 실물 검증 필요:
 
 - RSSI 장치 3~5대 정·역방향 전체 리허설과 1~2시간 안정성
 - 고정 BSSID/Channel, 사전·사후 Device Offset, Fault Injection
-- 버튼·RFHC UDP 송신·네트워크 JPEG-LCD 경로의 단일 Handheld Firmware 통합
-- 실제 Graphics Frame으로 800×480 수신·디코드·표시 지속 속도
+- 버튼·RFHC UDP 송신·네트워크 palette256 영상-LCD 경로의 단일 Handheld Firmware 통합
+- 실제 Graphics Frame으로 800×480 palette256 수신·디코드·표시의 300초 지속 속도
 
 ### 네트워크
 
@@ -121,22 +126,27 @@
 
 - 실센서 5대 전체 리허설과 재시작/재연결 실제 동작은 미검증이다.
 - 독립 `ParseConfig()`와 런타임 `Settings`의 RSSI 하한은 모두 `-110 dBm`으로 일치한다.
-- Image Relay와 Graphics 로컬 producer 코드는 있으나 실제 Handheld와 함께 연결하지 않았다.
+- Image Relay는 Graphics producer·실제 Handheld와 연결해 2026-08-27 영상 종단 출력을
+  확인했다. 300초 지속 성능은 아직 계측하지 않았다.
 
 ## 5. 공통 계약과 통합 상태
 
-### JPEG Frame 기준 구현
+### RFJF Frame 기준 구현
 
-Network Relay와 Embedded 수신 프로토타입은 다음 기준을 공유한다.
+Network Relay와 Embedded 수신 코드는 다음 기준을 공유한다.
 
 ```text
 Graphics ─TCP 9101─▶ Image Relay ─TCP 9102─▶ Handheld
-22-byte big-endian header + JPEG payload
-magic='RFJF', version=1, flags=0, seq, ts_ms, length
+22-byte big-endian header + payload
+magic='RFJF', version=1, flags(0=JPEG,1=RGB332+zlib,2=palette256+zlib), seq, ts_ms, length
 payload 최대 8 MiB
 ```
 
-Network Relay·Embedded 수신 코드와 Graphics sender가 이 규격을 사용한다. Graphics C++ 소스는 Git에서 추적되지만 실기기 종단 시험이 없으므로 전체 통합 완료로 보지 않는다. `flags=1` RGB332+zlib 경로는 실험용이며 공통 JPEG 계약에 포함하지 않는다.
+**기본 형식은 2026-08-27부터 `flags=2` palette256+zlib다.** `flags=1` RGB332+zlib은 호환·진단
+경로, `flags=0` JPEG은 단일 이미지·안정성 확인 경로로 유지한다. Network Relay·Embedded
+수신 코드와 Graphics sender가 이 규격을 사용하며, Graphics C++ 소스는 Git에서 추적된다.
+2026-08-27에 `flags=1`·`flags=2` 두 경로 모두 Graphics→Relay→ESP32-S3→NT35510 LCD 실기기
+종단 출력을 확인했다. 300초 지속 FPS·지연·drop 등 정량 성능은 아직 계측하지 않았다.
 
 ### Handheld Control 기준 구현
 
@@ -165,8 +175,9 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 ## 6. 현재 위험
 
 1. **논문 위험:** 분석 수치는 좋아졌지만 누락 구간·BSSID 공란·사후 Offset 부재·잠정 Scene 때문에 최종 근거가 아니다.
-2. **통합 위험:** RFHC와 JPEG의 개별 구성요소는 있으나 Handheld→Backend→Graphics→Relay→Handheld 실제 종단 검증이 없다.
-3. **환경 위험:** 현재 Workspace에는 Display가 없어 Viewer 실행 화면을 확인할 수 없다. Graphics Handheld 연결은 C++ Test까지만 검증됐고 실제 렌더 화면과 조작감은 미확인이다.
+2. **통합 위험(영상):** Graphics→Relay→Handheld 영상 경로는 2026-08-27 실기기 종단 출력을 확인했으나, 300초 지속 FPS·지연·drop 등 정량 성능은 아직 없다.
+3. **통합 위험(제어):** RFHC(방향·버튼) 경로는 Backend/Embedded/Graphics 개별 구성요소만 있고 Handheld→Backend→Graphics 실제 UDP 종단 검증이 없다.
+4. **환경 위험:** 현재 Workspace에는 Display가 없어 Viewer 실행 화면을 확인할 수 없다. Graphics Handheld 연결은 C++ Test까지만 검증됐고 실제 렌더 화면과 조작감은 미확인이다.
 
 ## 7. 다음 작업
 
@@ -175,18 +186,20 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
 4. Display가 있는 장비에서 SIBR를 실행해 Heatmap과 Handheld Camera 동작을 확인한다.
 5. 실제 BNO085로 Yaw·Pitch·Roll 축과 `q_mount`를 확정한다.
-6. Embedded의 검증된 BNO085·LCD 로컬 통합에 버튼·RFHC UDP·네트워크 JPEG 경로를 연결해 단일 Firmware로 통합한다.
-7. Graphics→Relay→Handheld를 연결해 800×480, 300초 지속 FPS를 검증한다.
+6. Embedded의 검증된 BNO085·LCD 로컬 통합에 버튼·RFHC UDP·네트워크 palette256 영상 경로를 연결해 단일 Firmware로 통합한다.
+7. Graphics→Relay→Handheld 800×480 영상 경로의 300초 지속 FPS·지연·drop을 계측한다.
 
 ## 8. 저장소 기준
 
-2026-08-24 문서 수정 직전 확인한 원격 `main` 기준:
+2026-08-28 이번 문서 갱신 직전, 이 Workspace에 로컬 clone이 있는 두 저장소의 `main`(=`origin/main`, clean):
 
 | 저장소 | GitHub `main` |
 |---|---|
-| RFVisualizer | `5408158` |
-| Embedded | `a3cab20` |
-| Network-Backend-Article | `bfd151d` |
-| RFVisualizer-Docs | `3fa9f22` (이 문서 수정 전) |
+| RFVisualizer | `fff09b1` |
+| RFVisualizer-Docs | `d4f8bc0` |
 
-이번 갱신에서 Graphics 테스트만 재실행했다. Network와 Embedded의 테스트 수는 각 저장소의 최신 기록을 인용했으며 다시 실행하지 않았다.
+Embedded와 Network-Backend-Article은 이 Workspace에 로컬 clone이 없어 직접 확인할 수
+없다. 각 파트 문서(`embedded/EMBEDDED.md`, `network/NETWORK.md`)에 적힌 팀원 보고를
+기준으로 삼았으며, 이번 갱신에서 원격 `main` 해시나 테스트를 다시 확인하지 않았다.
+
+이번 갱신에서는 어느 저장소도 테스트를 재실행하지 않았다. 각 파트 테스트 수는 해당 저장소·문서의 최신 기록을 인용했다.

@@ -829,35 +829,14 @@ payload bytes   length만큼의 Payload, 최대 8 MiB
 Header는 세 형식이 완전히 같고 `flags`만 다르다. Relay는 `flags`를 해석하지 않고
 22-byte Header와 length만큼의 Payload를 그대로 viewer(9102)로 중계한다.
 
-### 12.1 `flags=1` RGB332+zlib (현재 채택 규격)
+### 12.1 `flags=2` 팔레트 256색+zlib (현재 채택 규격, 2026-08-27부터)
 
-**Handheld 10 FPS 영상의 채택 규격이다.**
+**Handheld 영상의 채택 규격이다.** 장면에서 고른 256색 팔레트를 Frame마다 함께 실어 보낸다.
+픽셀당 1 byte와 수신 측 확장 비용은 `flags=1`과 같고, 고정 3-3-2 대신 장면에 실제로 있는
+색을 써서 화질이 개선된다.
 
 - 화면 크기는 Handheld LCD 기준 **정확히 800×480**이다. Producer는 다른 해상도로 이 형식을
   시작하지 않는다.
-- 압축 전 Payload는 픽셀당 1 byte RGB332, row-major, stride 없음, 위에서 아래로
-  **정확히 384,000 byte**다. bit 배치는 `rgb332 = (R & 0xE0) | ((G >> 3) & 0x1C) | (B >> 6)`이다.
-  순수 Red는 `0xE0`, Green은 `0x1C`, Blue는 `0x03`, White는 `0xFF`다.
-- 전송 Payload는 이 384,000 byte를 **표준 `zlib` Stream**(RFC 1950) level 1로 압축한 것이다.
-  수신 측은 압축 수준에 의존하지 않는다.
-- 수신 측은 해제 결과가 384,000 byte가 아니면 그 Frame을 버린다.
-- Producer는 Bayer Ordered Dithering을 걸 수 있다. 픽셀 값만 달라지고 크기·배치·`flags`는
-  그대로이므로 **수신 측 계약에는 영향이 없다**.
-
-### 12.2 `flags=0` JPEG (단일 이미지·안정성 경로)
-
-- Payload는 JPEG Baseline Stream이다. 해상도 제약은 없고 권장값은 같은 800×480이다.
-- 단일 이미지 전송과 안정성 확인 경로로 유지한다.
-- **10 FPS를 목표로 하는 실시간 영상 경로로는 쓰지 않는다.** ESP32-S3의 소프트웨어 JPEG
-  디코드는 800×480에서 Frame당 수백 ms가 걸린다. 실측에서 Quality를 10부터 100까지 바꿔도
-  표시율은 약 2 FPS로 같았다. 디코드 비용이 압축률이 아니라 픽셀 수에 비례하기 때문이다.
-
-### 12.3 `flags=2` 팔레트 256색+zlib (전환 대상)
-
-장면에서 고른 256색 팔레트를 Frame마다 함께 실어 보낸다. 픽셀당 1 byte와 수신 측
-확장 비용은 `flags=1`과 같고, 고정 3-3-2 대신 장면에 실제로 있는 색을 쓴다.
-
-- 화면 크기는 `flags=1`과 같이 **정확히 800×480**이다.
 - 압축 전 Payload는 팔레트와 인덱스를 이어 붙인 **정확히 384,512 byte**다.
 
 ```text
@@ -873,7 +852,34 @@ offset    512   384,000 B   인덱스, 픽셀당 1 byte, row-major, 위에서 �
   Frame마다 읽어야 한다. Relay는 상태를 갖지 않으므로 수신자가 중간에 붙거나 재접속할 수
   있고, 그때도 Frame 하나만으로 색을 복원할 수 있어야 한다.
 - 수신 측은 팔레트가 Frame마다 바뀔 수 있다고 가정한다. Producer의 갱신 정책은 계약이 아니다.
-- 상태: **합의 대상. Graphics 구현 진행 중이며 실기기 검증은 하지 않았다.**
+- Graphics는 장면 색 분포로 팔레트를 고르는 `PaletteChooser`를 별도 Thread에서 돌리고,
+  장면 전환이나 팔레트 적합도 저하 시 다시 고른다.
+- 상태: **채택. 2026-08-27 Graphics→Relay→ESP32-S3→NT35510 LCD 실기 출력을 확인했고,
+  RGB332 대비 화질 개선도 확인했다.** 300초 지속 FPS·지연·drop은 아직 계측하지 않았다.
+
+### 12.2 `flags=1` RGB332+zlib (호환·진단 경로)
+
+`flags=2` 채택 전까지 쓰던 규격이며 지금은 호환·진단용으로 유지한다.
+
+- 화면 크기는 `flags=2`와 같이 **정확히 800×480**이다.
+- 압축 전 Payload는 픽셀당 1 byte RGB332, row-major, stride 없음, 위에서 아래로
+  **정확히 384,000 byte**다. bit 배치는 `rgb332 = (R & 0xE0) | ((G >> 3) & 0x1C) | (B >> 6)`이다.
+  순수 Red는 `0xE0`, Green은 `0x1C`, Blue는 `0x03`, White는 `0xFF`다.
+- 전송 Payload는 이 384,000 byte를 **표준 `zlib` Stream**(RFC 1950) level 1로 압축한 것이다.
+  수신 측은 압축 수준에 의존하지 않는다.
+- 수신 측은 해제 결과가 384,000 byte가 아니면 그 Frame을 버린다.
+- Producer는 고정 4×4 Bayer Ordered Dithering을 걸 수 있다. 픽셀 값만 달라지고
+  크기·배치·`flags`는 그대로이므로 **수신 측 계약에는 영향이 없다**.
+- 2026-08-27 Graphics producer→Relay→Handheld 실기기 종단 연동을 이 경로로 먼저
+  확인했다(렌더 송신과 `/handheld/control` IMU 회전 동시 구동).
+
+### 12.3 `flags=0` JPEG (단일 이미지·안정성 경로)
+
+- Payload는 JPEG Baseline Stream이다. 해상도 제약은 없고 권장값은 같은 800×480이다.
+- 단일 이미지 전송과 안정성 확인 경로로 유지한다.
+- **10 FPS를 목표로 하는 실시간 영상 경로로는 쓰지 않는다.** ESP32-S3의 소프트웨어 JPEG
+  디코드는 800×480에서 Frame당 수백 ms가 걸린다. 실측에서 Quality를 10부터 100까지 바꿔도
+  표시율은 약 2 FPS로 같았다. 디코드 비용이 압축률이 아니라 픽셀 수에 비례하기 때문이다.
 
 ### 12.4 공통 규칙
 
@@ -882,17 +888,17 @@ offset    512   384,000 B   인덱스, 픽셀당 1 byte, row-major, 위에서 �
   최신 Frame 우선 정책에서 생기는 `seq` 건너뜀은 정상이다.
 - Network Relay와 Embedded Parser의 Host Test는 통과했다.
 - 서버 더미 JPEG→ESP32-S3 수신·디코드·NT35510 LCD 실물 출력은 통과했다.
-- `flags=1` 경로의 Graphics producer→Relay→Handheld 실기기 종단 연동은 통과했다.
-  렌더 송신과 `/handheld/control` IMU 회전을 동시에 구동했다.
+- `flags=1`·`flags=2` 두 경로 모두 Graphics producer→Relay→Handheld 실기기 종단
+  연동을 확인했다.
 - Graphics Workspace에는 PBO Readback·형식별 Encoding·RFJF 송신 producer가 있고,
-  RGB332 변환·zlib round-trip·Header 계약은 `SIBR_frame_codec_test`로 검증한다.
+  RGB332/팔레트256 변환·zlib round-trip·Header 계약은 `SIBR_frame_codec_test`로 검증한다.
 - 해당 Graphics C++ 소스는 `.gitignore`의 `!src/projects/gaussianviewer/**` 예외로
   Git에서 추적된다.
 
 남은 확정 항목:
 
-- 300초 지속 성능값과 형식별 표시율
-- `flags=2` 팔레트256 형식의 실기기 검증과 Dithering 강도 확정
+- 300초 지속 성능값과 형식별 표시율(FPS·지연·drop)
+- `flags=2` Dithering·팔레트 갱신 주기 최종값
 - 수신 Timeout과 장치별 재연결 정책
 - ESP32-S3 Buffer 크기와 실제 LCD Throughput
 
@@ -940,9 +946,7 @@ offset    512   384,000 B   인덱스, 픽셀당 1 byte, row-major, 위에서 �
 - 실제 Node ID와 설치 위치의 대응
 - Bridge 위치 정보와 Backend Assignment 중 어느 값을 기준으로 사용할지
 - 강의실 Experiment와 복도 Experiment의 좌표계 분리
-- `/handheld/control`을 Graphics Camera에 적용하는 축 변환·Recenter 규칙
 - PositionEstimate 알고리즘
 - BNO085 실제 장착 변환 `q_mount`와 Graphics Camera 축 변환
-- Graphics C++ 소스 Git 반영과 깨끗한 Clone 재빌드
-- RFJF 300초 지속 성능값과 형식별 표시율
-- `flags=2` 팔레트256 형식의 실기기 검증
+- RFJF 300초 지속 성능값과 형식별 표시율(FPS·지연·drop)
+- Embedded 버튼 Event·RFHC UDP 송신을 단일 Handheld Firmware로 통합

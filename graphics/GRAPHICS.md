@@ -42,7 +42,7 @@ Radio Map / Path / Coverage 결과
   ↓
 높이별 3D RF Volume Bundle
   ↓
-SIBR RF Volume·JPEG 송신 로컬 프로토타입
+SIBR RF Volume·RFJF(palette256 기본) 영상 송신, 실기기 종단 확인(2026-08-27)
 ```
 
 ## 3. PGSR 장면 재구성
@@ -345,7 +345,7 @@ XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
 - Raw Sionna / Plain IDW / Residual IDW 전환
 - Dear ImGui Method·Opacity UI
 - Offscreen 800×480 Framebuffer
-- PBO Readback, JPEG Encoding, RFJF 22-byte Header
+- PBO Readback, palette256/RGB332/JPEG Encoding, RFJF 22-byte Header
 - TCP `9101` 송신과 최신 Frame 1개 Queue
 - Backend WebSocket `/handheld/control` 구독과 Camera 자세·Position 적용
 
@@ -358,7 +358,7 @@ XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
 --stream-host <relay-host>
 --stream-port 9101
 --stream-fps 10
---stream-format rgb332-zlib|jpeg
+--stream-format palette256-zlib|rgb332-zlib|jpeg
 --stream-dither 0.4
 --jpeg-quality 80
 --run-seconds <seconds>
@@ -409,13 +409,19 @@ Render Thread
           ↓ 최신 CPU Frame 1개
 FrameStreamer Worker
   ├─ 화면 Flip·범례·PROVISIONAL·FPS Overlay
-  ├─ 형식별 Encoding (RGB332+zlib 기본, JPEG 예비)
+  ├─ 형식별 Encoding (palette256+zlib 기본, RGB332+zlib 호환, JPEG 예비)
   └─ RFJF Header + TCP 송신·재연결
 ```
 
 형식 변환과 RFJF Header packing은 GL·OpenCV에 의존하지 않는 `FrameCodec.hpp` 한 곳에 있고
-`SIBR_frame_codec_test`가 검증한다. `--stream-format rgb332-zlib`은 렌더 해상도가 정확히
-800×480이 아니면 시작 전에 오류로 멈춘다.
+`SIBR_frame_codec_test`가 검증한다. `--stream-format palette256-zlib`·`rgb332-zlib`은 렌더
+해상도가 정확히 800×480이 아니면 시작 전에 오류로 멈춘다.
+
+palette256 형식은 별도 Thread의 `PaletteChooser`가 장면 색 분포로 팔레트를 고르고, 장면
+전환이나 팔레트 적합도 저하 시 다시 고른다. RGB332는 고정 4×4 Bayer Ordered Dithering을
+지원한다. 2026-08-27에 두 형식 모두 Graphics→Relay→ESP32-S3→NT35510 LCD 실기 출력을
+확인했고, palette256이 RGB332보다 화질이 좋음을 확인했다. 300초 지속 FPS·지연·drop은
+아직 계측하지 않았다.
 
 현재 Encoder와 TCP 송신은 하나의 Worker Thread에서 처리한다. CPU Queue는 최신 Frame
 1개만 유지하고 처리하지 못한 오래된 Frame은 폐기한다.
@@ -456,6 +462,14 @@ Handheld Worker (WebSocket)        Render Thread
 - 높이별 Sionna 결과 저장
 - 3D RF Volume Bundle Export
 - Graphics Python 도구 375개 통과, 2개 건너뜀
+- FrameCodec RGB332/팔레트256 인코딩·zlib round-trip (`SIBR_frame_codec_test`)
+- `/handheld/control` WebSocket Consumer 계약 검증 (`SIBR_handheld_control_test`)
+
+### 실기기 검증 완료(2026-08-27)
+
+- Graphics→Relay→ESP32-S3→NT35510 LCD RFJF 영상 종단 출력(`flags=1` RGB332,
+  `flags=2` 팔레트256 둘 다). palette256이 RGB332보다 화질이 좋음을 확인했다.
+- 300초 지속 FPS·지연·drop 등 정량 성능은 아직 계측하지 않았다.
 
 ### 로컬 프로토타입·추가 검증 필요
 
@@ -463,7 +477,6 @@ Handheld Worker (WebSocket)        Render Thread
 - 3층 Scene: 계획도 기반 좌표·Scale과 계단/문/책상/AP 형상 보정 필요
 - 분석 결과: Residual IDW MAE 3.52 dB, 단 `paper_evidence_eligible=false`
 - SIBR RF Volume·Depth 가림·Offscreen Rendering
-- JPEG Encoding·RFJF TCP Streaming
 - `/handheld/control` WebSocket Consumer와 Camera 축·Recenter·Position 적용
   (C++ Test는 통과, 실행 화면은 Display가 없어 미확인)
 
@@ -471,7 +484,7 @@ Handheld Worker (WebSocket)        Render Thread
 
 - 실제 BNO085 축과 `q_mount` 실물 시험
 - Embedded 버튼 Event 송신
-- Graphics→Relay→Handheld 실기기 종단 검증
+- RFJF 300초 지속 성능값(FPS·지연·drop)
 
 ## 10. 다음 작업
 

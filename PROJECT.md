@@ -68,7 +68,7 @@ Gaussian Scene + Radio Map + Camera Pose
         ↓
 PC Viewer에서 800×480 화면 렌더링
         ↓
-JPEG Frame 전송
+RFJF Frame 전송 (palette256+zlib 기본)
         ↓
 ESP32-S3에서 디코딩
         ↓
@@ -77,7 +77,7 @@ ESP32-S3에서 디코딩
 
 핸드헬드 ESP32-S3는 3DGS 또는 Sionna RT를 직접 실행하지 않는 Thin Client로 설계한다. 장치 방향과 버튼 입력을 PC에 보내고, PC가 렌더링한 화면을 수신해 표시한다.
 
-이 흐름은 최종 목표이며, 현재는 그래픽스 Viewer와 핸드헬드 영상 경로가 아직 구현 단계에 들어가지 않았다.
+이 흐름은 최종 목표다. 영상 경로(Viewer→RFJF 송신→ESP32-S3→LCD)는 구현되어 2026-08-27에 실기기 종단 출력을 확인했고, 방향 입력 경로(핸드헬드→Backend→Viewer Camera)도 구현·자동 검증까지 마쳤다. 실제 ESP32-S3에서 방향·버튼을 UDP로 송신하는 연결과 300초 지속 성능 검증은 아직 남아 있다. 현재 상세 진행도는 `CURRENT_STATUS.md`를 따른다.
 
 ## 4. 두 가지 사용 경로
 
@@ -106,12 +106,12 @@ Backend / PC Viewer
   ↓
 Gaussian Scene + 2.5D Heatmap
   ↓
-JPEG Streaming
+RFJF Streaming (palette256+zlib)
   ↓
 ESP32-S3 LCD
 ```
 
-현재 네트워크 저장소에는 200 ms 동기화와 WebSocket 인터페이스가 격리되어 있으나 기본 비활성이다. 위치 추정 알고리즘, Viewer 확장, IMU, JPEG/LCD 경로는 아직 완료되지 않았다.
+현재 네트워크 저장소에는 200 ms 동기화와 WebSocket 인터페이스가 격리되어 있으나 기본 비활성이다. 핸드헬드 방향 반영, Viewer의 RF Volume 렌더링, RFJF 영상 송신·LCD 표시는 구현·실기기 검증까지 진행됐다. 실제 위치 추정 알고리즘과 실기기 방향/버튼 UDP 송신, 300초 지속 성능 검증은 아직 완료되지 않았다.
 
 ## 5. 파트별 책임
 
@@ -124,7 +124,7 @@ ESP32-S3 LCD
 - Proxy 장애물 배치 및 재질 설정
 - Sionna RT Scene과 Radio Map 생성
 - 실제 RSSI와 시뮬레이션 결과 분석
-- 향후 SIBR 기반 Heatmap Viewer와 영상 출력 구현
+- SIBR 기반 3D RF Volume Viewer와 RFJF 영상 출력(실기기 종단 확인)
 
 ### 임베디드
 
@@ -133,7 +133,7 @@ ESP32-S3 LCD
 - ESP32 Gateway의 수신·누락 집계·UART 전달
 - STM32 UART 수신, Checksum 검증, 노드 상태 관리
 - Serial-MQTT Bridge를 통한 MQTT 발행
-- 향후 ESP32-S3 IMU·버튼·JPEG·LCD 기능
+- ESP32-S3 IMU·LCD 로컬 통합 실물 검증, 버튼·RFHC UDP 송신 통합은 진행 중
 
 ### 네트워크/백엔드
 
@@ -193,7 +193,7 @@ ESP32-S3 LCD
 
 - 방향 입력이 Viewer Camera에 반영
 - 버튼식 위치 갱신
-- JPEG Frame 전송
+- RFJF Frame 전송
 - ESP32-S3 LCD 출력
 - End-to-End 지연과 Frame Drop 측정
 

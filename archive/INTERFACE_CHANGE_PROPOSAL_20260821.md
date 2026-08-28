@@ -1,3 +1,6 @@
+> **반영 완료(2026-08-28 확인).** 이 제안은 `INTERFACE.md` §7~8과 `network/NETWORK.md`에
+> 이미 병합되어 현재 코드·문서 상태다. 과거 기록으로만 보관한다.
+
 # 중앙 문서 변경안 (INTERFACE.md / network/NETWORK.md)
 
 최종 실험(Run/TestSegment) 재설계는 Graphics 파트가 소비하는 Export 계약을 바꾼다.
