@@ -367,36 +367,48 @@ XYZ 외삽이다. Bundle은 `paper_evidence_eligible=false`와
 --handheld-port 8000
 ```
 
-`--handheld-host`는 `--rf-volume`을 함께 줘야 한다. Position Update를 검증·변환할 manifest의
-`frameId`와 `T_scene_from_metric`이 없으면 시작 오류로 종료한다.
+`--handheld-host`는 `--rf-volume`을 함께 줘야 한다. Height-cycle 버튼이 순환할 RF Volume이
+없으면 시작 오류로 종료한다(2026-08-28 이전에는 Position Update 변환용 manifest가 이유였다).
 
 `gaussian-splatting/SIBR_viewers/.gitignore`에 `!src/projects/gaussianviewer/**` 예외가 있어
 `RFVolumeRenderer`, `FrameStreamer`, `FrameCodec`, `HandheldControlClient`, 수정된 `GaussianView`와 `main.cpp`는
 현재 Git에서 추적된다. 새 Build Directory에서 configure·build가 통과하는 것을 확인했다.
 
-### 8.3 Handheld Camera 연결
+### 8.3 Handheld Camera·버튼 연결
+
+**2026-08-28 기획 변경**: Recenter 버튼·Position Update 버튼은 폐기했다. 물리 버튼 2개는
+이제 텔레포트 이동과 Heatmap Z-height 프리셋 순환을 맡는다. 이 절은 새 규격 기준으로
+다시 썼다.
 
 구현·자동 검증 완료:
 
-- `HandheldControlClient` — Boost.Beast WebSocket Worker + Session/Sample/Event Reducer
+- `HandheldControlClient` — Boost.Beast WebSocket Worker + Session/Sample Reducer, RFHC
+  bit1·bit2를 `teleportButtonHeld`/`heightCycleButtonHeld` 레벨 상태로 그대로 전달
 - Camera 자세 적용: `q_camera = q_camera_anchor * inverse(q_device_anchor) * normalize(q_device)`
-- Recenter: 그 Frame에 화면이 튀지 않고, 이후 움직임부터 새 기준을 쓴다
-- Position: `T_scene_from_metric`으로 Gaussian Scene 좌표로 옮겨 translation만 바꾼다
+  (최초 연결 시 자동 anchor. Recenter 버튼이 없어져 세션 중 재-anchor 수단은 없다 —
+  다시 붙으면 그 시점 자세로 anchor를 새로 잡는다)
 - Handheld 활성 중 Camera Handler는 `NONE`, 비활성이면 기존 FPS로 되돌린다
 - FPS 복귀 조건: 인자 없음, 연결 전, WebSocket 단절, Backend `stale=true`,
   마지막 유효 자세 이후 750 ms 경과
+- **텔레포트**: `renderer/ArcTeleportController.*`의 상태기계를 키보드 R과 Handheld
+  `teleportButtonHeld` 양쪽에서 같은 `TeleportAction`으로 구동한다.
+  Handheld가 Camera를 몰고 있어도(활성 상태) 조준·이동이 된다 — 예전에는 게이트 버그로
+  막혀 있었는데 이번에 고쳤다. 조준 방향은 Handheld가 이미 돌리고 있는 Camera 방향을
+  그대로 쓴다.
+- **Height-cycle**: `RFVolumeRenderer::cycleHeightPreset()`이 키보드 H와 Handheld
+  `heightCycleButtonHeld`의 press edge에서 RF Volume manifest의 층(`nz`)을 순서대로 돌고,
+  한 바퀴 끝나면 Z 절단 없는 전체 범위로 돌아간다.
 - `SIBR_handheld_control_test` (CTest `handheld_control`) — 같은 실행 파일 안의 Boost.Beast
-  Fake Backend로 계약 검증, 중복 제거, 재접속, 종료 시간까지 확인
+  Fake Backend로 계약·레벨 버튼 상태·재접속·종료 시간까지 확인. `SIBR_arc_teleport_test`도
+  그대로 통과.
 
 아직 없는 검증:
 
 - 실제 BNO085 축과 `q_mount`의 Yaw·Pitch·Roll 실물 시험
-- Embedded 버튼 송신 (현재 미구현)
+- Embedded 버튼 GPIO·UDP 송신 (아직 임베디드 쪽 미구현 — 작업 지시서 전달 완료)
+- 실기기 버튼으로 텔레포트·Height-cycle을 실행하는 종단 시험(로컬은 키보드 R/H로만 검증)
 - 실제 Relay→Handheld 300초 지속 성능 검증
 - Viewer 실행 화면 확인 — 이 Workspace에는 Display가 없어 GLFW가 초기화되지 않는다
-
-WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다. Backend가 `position_update`를
-cache/replay하지 않기 때문이며, Graphics는 가짜 복구를 하지 않는다.
 
 ### 현재 Render·송신 흐름
 
@@ -431,10 +443,11 @@ Handheld Pose는 별도 Worker Thread가 받아 Mailbox에 넣고, Render Thread
 
 ```text
 Handheld Worker (WebSocket)        Render Thread
-  ├─ /handheld/control read          ├─ Mailbox drain (non-blocking)
-  ├─ 계약 검증·중복 제거             ├─ stale/timeout 판정
-  └─ 최신 Pose 1개 + Event Edge ≤16  ├─ Recenter·Position Edge 적용
-     (Mutex 하나 아래)               ├─ Camera pose 계산
+  ├─ /handheld/control read          ├─ poll() (non-blocking)
+  ├─ 계약 검증(Session/Sample)       ├─ stale/timeout 판정
+  └─ 최신 Pose + 버튼 레벨 상태 2개  ├─ Camera pose 계산
+     (Mutex 하나 아래)               ├─ 텔레포트·Height-cycle press/hold/release
+                                     │  edge 계산(키보드와 동일 패턴)
                                      ├─ fromTransform(..., false, false)
                                      └─ onUpdate → render
 ```
@@ -463,7 +476,8 @@ Handheld Worker (WebSocket)        Render Thread
 - 3D RF Volume Bundle Export
 - Graphics Python 도구 375개 통과, 2개 건너뜀
 - FrameCodec RGB332/팔레트256 인코딩·zlib round-trip (`SIBR_frame_codec_test`)
-- `/handheld/control` WebSocket Consumer 계약 검증 (`SIBR_handheld_control_test`)
+- `/handheld/control` WebSocket Consumer 계약·텔레포트/Height-cycle 버튼 레벨 상태 검증
+  (`SIBR_handheld_control_test`), 텔레포트 상태기계 자체 검증 (`SIBR_arc_teleport_test`)
 
 ### 실기기 검증 완료(2026-08-27)
 
@@ -477,13 +491,14 @@ Handheld Worker (WebSocket)        Render Thread
 - 3층 Scene: 계획도 기반 좌표·Scale과 계단/문/책상/AP 형상 보정 필요
 - 분석 결과: Residual IDW MAE 3.52 dB, 단 `paper_evidence_eligible=false`
 - SIBR RF Volume·Depth 가림·Offscreen Rendering
-- `/handheld/control` WebSocket Consumer와 Camera 축·Recenter·Position 적용
+- `/handheld/control` WebSocket Consumer와 Camera 축·텔레포트·Height-cycle 적용
   (C++ Test는 통과, 실행 화면은 Display가 없어 미확인)
 
 ### 아직 미구현·미검증
 
 - 실제 BNO085 축과 `q_mount` 실물 시험
-- Embedded 버튼 Event 송신
+- Embedded 버튼 GPIO·UDP 송신 (작업 지시서 전달 완료, 이 파트 구현 대기)
+- 실기기 버튼으로 텔레포트·Height-cycle을 실행하는 종단 시험
 - RFJF 300초 지속 성능값(FPS·지연·drop)
 
 ## 10. 다음 작업
@@ -491,8 +506,11 @@ Handheld Worker (WebSocket)        Render Thread
 1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정한다.
 2. 누락된 정방향 Test 1·2와 Offset/BSSID를 최소 재측정한다.
 3. Sionna/IDW/Residual 분석을 재실행하고 논문 근거 사용 가능 여부를 판정한다.
-4. Display가 있는 장비에서 SIBR를 실행해 RF Volume 실제 Frame과 Handheld Camera 동작을 확인한다.
-5. 실제 BNO085로 Yaw·Pitch·Roll 축을 확인하고 Relay→Handheld 300초 시험을 수행한다.
+4. Display가 있는 장비에서 SIBR를 실행해 RF Volume 실제 Frame과 Handheld Camera·텔레포트·
+   Height-cycle 동작을 확인한다.
+5. 실제 BNO085로 Yaw·Pitch·Roll 축을 확인한다.
+6. 임베디드 버튼 2개가 연결되면 Relay→Handheld 300초 시험과 실기기 버튼 종단 시험을
+   함께 수행한다.
 
 ## 11. 미확정 항목
 

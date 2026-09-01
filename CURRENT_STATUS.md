@@ -73,9 +73,13 @@
 - Graphics Python 도구 전체 375개 통과, 2개 건너뜀 (`pgsr` 환경, `--import-mode=importlib`)
 - 로컬 SIBR에 RF Volume 합성, Mesh Depth 가림, Offscreen 800×480, RFJF(palette256/RGB332/JPEG) 송신 코드와 빌드 결과 존재
 - `PaletteChooser`(장면 팔레트 자동 선정, 재선정), RGB332 Bayer Ordered Dithering
-- Backend WebSocket `/handheld/control` 구독과 Camera 자세·Recenter·Position 적용 구현
-- `SIBR_handheld_control_test` 1개(assertion 40여 개) 통과 — Fake Backend WebSocket 포함
-- 새 Build Directory에서 configure·build·CTest 통과
+- Backend WebSocket `/handheld/control` 구독과 Camera 자세 적용 구현
+- **2026-08-28 기획 변경 반영**: Recenter·Position Update 버튼을 텔레포트·Height-cycle
+  버튼으로 교체 구현. `ArcTeleportController`를 키보드 R·Handheld 버튼 양쪽에서 구동하고,
+  Handheld 활성 중 텔레포트가 강제로 꺼지던 게이트 버그를 고쳤다. `RFVolumeRenderer`에
+  Height-cycle 순환 추가
+- `SIBR_handheld_control_test`(Fake Backend WebSocket 포함), `SIBR_arc_teleport_test` 통과
+- 새 Build Directory에서 configure·build·CTest(6개) 통과
 - **2026-08-27 실기기 확인**: Graphics→Relay→ESP32-S3→NT35510 LCD RFJF 영상 종단 출력
   (`flags=1` RGB332, `flags=2` palette256 둘 다), palette256이 화질 우위
 
@@ -86,6 +90,7 @@
 - Display가 있는 장비에서 SIBR 실행·Heatmap 실제 렌더 검증
 - 실제 BNO085 축과 `q_mount`의 Yaw·Pitch·Roll 실물 시험
 - Graphics→Relay→Handheld 300초 지속 FPS·지연·drop 정량 검증
+- 임베디드 버튼 2개(GPIO·UDP)가 연결되면 실기기 텔레포트·Height-cycle 종단 시험
 
 ### 임베디드
 
@@ -156,14 +161,15 @@ Embedded와 Backend는 다음 RFHC v1 Wire 규격과 공유 Test Vector를 검�
 Handheld ─UDP 9200, 50 Hz─▶ Backend ─WS /handheld/control─▶ Graphics
 52-byte big-endian Packet
 magic='RFHC', version=1, flags, device_id, session_id
-sample_seq, event_seq, timestamp_ms, quaternion x/y/z/w, CRC32/IEEE
+sample_seq, event_seq(2026-08-28부터 미사용), timestamp_ms, quaternion x/y/z/w, CRC32/IEEE
 500 ms timeout 후 stale
 ```
 
-Backend Parser·Listener, Embedded Serializer, Graphics Consumer는 구현됐다. Graphics는
-`/handheld/control`을 구독해 Camera 자세·Recenter·Position을 적용하며 C++ Test로 검증했다.
-실제 ESP32-S3 UDP 송신, 버튼 Event, `q_mount`와 BNO085 실물 축 시험은 아직 남아 있다.
-WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
+Backend Parser·Listener, Embedded Serializer는 구현됐다(Recenter·Position Update 버튼
+기준). **2026-08-28 기획 변경**으로 `flags` bit1·bit2가 텔레포트·Height-cycle 버튼
+레벨 상태로 바뀌었고, Graphics Consumer는 이미 새 규격으로 구현·C++ Test 검증까지
+마쳤다. Backend·Embedded는 아직 구 규격이며 작업 지시서를 전달했다(`INTERFACE.md` §11).
+실제 ESP32-S3 UDP 송신, 버튼 GPIO, `q_mount`와 BNO085 실물 축 시험은 아직 남아 있다.
 
 ### 좌표 관리
 
@@ -176,7 +182,7 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 
 1. **논문 위험:** 분석 수치는 좋아졌지만 누락 구간·BSSID 공란·사후 Offset 부재·잠정 Scene 때문에 최종 근거가 아니다.
 2. **통합 위험(영상):** Graphics→Relay→Handheld 영상 경로는 2026-08-27 실기기 종단 출력을 확인했으나, 300초 지속 FPS·지연·drop 등 정량 성능은 아직 없다.
-3. **통합 위험(제어):** RFHC(방향·버튼) 경로는 Backend/Embedded/Graphics 개별 구성요소만 있고 Handheld→Backend→Graphics 실제 UDP 종단 검증이 없다.
+3. **통합 위험(제어):** RFHC(방향·버튼) 경로는 Graphics가 2026-08-28 신규 버튼 규격(텔레포트·Height-cycle)까지 구현·CTest 검증을 마쳤지만, Backend/Embedded는 아직 구 규격(Recenter·Position Update)이고 실제 UDP 종단 검증도 없다.
 4. **환경 위험:** 현재 Workspace에는 Display가 없어 Viewer 실행 화면을 확인할 수 없다. Graphics Handheld 연결은 C++ Test까지만 검증됐고 실제 렌더 화면과 조작감은 미확인이다.
 
 ## 7. 다음 작업
@@ -186,7 +192,7 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
 4. Display가 있는 장비에서 SIBR를 실행해 Heatmap과 Handheld Camera 동작을 확인한다.
 5. 실제 BNO085로 Yaw·Pitch·Roll 축과 `q_mount`를 확정한다.
-6. Embedded의 검증된 BNO085·LCD 로컬 통합에 버튼·RFHC UDP·네트워크 palette256 영상 경로를 연결해 단일 Firmware로 통합한다.
+6. Embedded의 검증된 BNO085·LCD 로컬 통합에 텔레포트·Height-cycle 버튼(RFHC UDP)·네트워크 palette256 영상 경로를 연결해 단일 Firmware로 통합한다.
 7. Graphics→Relay→Handheld 800×480 영상 경로의 300초 지속 FPS·지연·drop을 계측한다.
 
 ## 8. 저장소 기준
@@ -195,11 +201,13 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 
 | 저장소 | GitHub `main` |
 |---|---|
-| RFVisualizer | `fff09b1` |
+| RFVisualizer | `fff09b1` (텔레포트·Height-cycle 버튼 구현이 아직 이 커밋 위 작업 트리에만 있고 커밋되지 않음) |
 | RFVisualizer-Docs | `d4f8bc0` |
 
 Embedded와 Network-Backend-Article은 이 Workspace에 로컬 clone이 없어 직접 확인할 수
 없다. 각 파트 문서(`embedded/EMBEDDED.md`, `network/NETWORK.md`)에 적힌 팀원 보고를
 기준으로 삼았으며, 이번 갱신에서 원격 `main` 해시나 테스트를 다시 확인하지 않았다.
 
-이번 갱신에서는 어느 저장소도 테스트를 재실행하지 않았다. 각 파트 테스트 수는 해당 저장소·문서의 최신 기록을 인용했다.
+이번 갱신에서 Graphics의 `handheld_control`·`arc_teleport`를 포함한 CTest 6개를 로컬
+빌드로 재실행해 통과를 확인했다(§4 그래픽스 참고). Network·Embedded 테스트는 재실행하지
+않았다 — 각 파트 테스트 수는 해당 저장소·문서의 최신 기록을 인용했다.

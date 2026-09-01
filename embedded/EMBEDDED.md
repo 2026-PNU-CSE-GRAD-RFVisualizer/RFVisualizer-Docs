@@ -60,8 +60,8 @@ Serializer는 Component에 포함됐지만 `app_main`의 실제 UDP 송신 Task�
 - Heatmap Z-height 프리셋 순환 버튼
 - PC Viewer Camera 방향 갱신
 
-2026-08-28에 기획이 바뀌어 방향 Recenter 버튼·Position Update 버튼은 폐기했다. 상세는
-`TASK_EMBEDDED_HANDHELD_BUTTONS.md` 참고.
+2026-08-28에 기획이 바뀌어 방향 Recenter 버튼·Position Update 버튼은 폐기했다. 작업
+지시서를 이 파트에 전달 완료했다. 상세 규격은 `INTERFACE.md` §11 참고.
 
 ### 2.3 MVP-C: JPEG·LCD
 
@@ -527,9 +527,12 @@ HealthTask
 - 현재 장착은 Embedded `q_mount=identity`와 Graphics 고정 축 변환 조합으로 Yaw·Pitch·Roll 방향/부호 검증 완료
 - 센서 장착 방향 변경 시 `q_mount` 또는 Graphics 고정 변환 재검증
 
-### 버튼 (2026-08-28 기획 변경, 상세는 `TASK_EMBEDDED_HANDHELD_BUTTONS.md`)
+### 버튼 (2026-08-28 기획 변경, 상세 규격은 `INTERFACE.md` §11)
 
 방향 Recenter·Position Update 버튼 기획은 폐기했다. 물리 버튼 2개를 다음 용도로 쓴다.
+그래픽스 쪽(`HandheldControlClient`·Viewer Consumer)은 이미 새 규격으로 구현·CTest
+검증까지 마쳤다(`graphics/GRAPHICS.md` §8.3). 이 파트가 실제 버튼을 연결하면 종단
+시험을 할 수 있다.
 연속 6DoF 추적은 여전히 쓰지 않는다 — 실제 Position 계산은 PC/Backend 담당, 버튼은 값을
 직접 계산하지 않고 상태만 올린다.
 
