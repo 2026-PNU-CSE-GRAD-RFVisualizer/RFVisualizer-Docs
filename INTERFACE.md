@@ -678,10 +678,9 @@ REST Endpoint(`/handheld/positions`, `/handheld/position/active`) 코드 자체�
 Embedded와 Backend가 RFHC v1 Wire 규격과 공유 Test Vector를 검증했다. Backend Parser·UDP Listener와 Embedded Serializer는 구현됐고, Graphics의 `/handheld/control` Consumer와 Camera 적용도 구현·자동 검증했다. 실제 ESP32-S3 UDP 송신과 BNO085 실물 축 시험은 남아 있다.
 
 **2026-08-28 기획 변경**: Position Update 버튼·Recenter 버튼 기획은 폐기했다. bit1·bit2를
-**텔레포트 버튼**·**Height-cycle 버튼**으로 재정의한다(§11.3). Graphics(`HandheldControlClient`,
-Viewer Consumer)는 이 새 정의로 이미 구현·CTest 검증을 마쳤다(`graphics/GRAPHICS.md` §8.3).
-Embedded·Network는 아직 구현 전이다 — 작업 지시는 각각 `embedded/EMBEDDED.md` §2.2·§12,
-`network/NETWORK.md` §13을 따른다.
+**텔레포트 버튼**·**Height-cycle 버튼**으로 재정의한다(§11.3). 이 절은 새 정의를
+반영했다. 2026-09-01 Embedded Firmware의 기존 50 Hz ControlTxTask에도 두 버튼의
+debounce된 held-state 송신이 연결됐으며, 실제 장치 UDP 종단 검증은 남아 있다.
 
 ### 11.1 전송
 
@@ -726,7 +725,7 @@ XorOut: 0xFFFFFFFF
 Check("123456789"): 0xCBF43926
 ```
 
-### 11.3 Flag와 Event
+### 11.3 Flag와 버튼 상태
 
 | Bit | 이름 | 의미 |
 |---:|---|---|

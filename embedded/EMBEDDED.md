@@ -50,8 +50,10 @@ Network Backend
 BNO085 독립 Quaternion 실물 시험과 RFHC v1 Serializer 공유 Vector 검증은 완료했다.
 추가로 `handheld_jpeg_stream`에서 BNO085와 NT35510 LCD를 동시에 구동하고, 부팅 자세를
 정면으로 삼는 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동을 실물 검증했다.
-Serializer는 Component에 포함됐지만 `app_main`의 실제 UDP 송신 Task에서는 아직 호출하지
-않는다. 버튼·UDP 실물 송신·Viewer 연동도 통합 전이다.
+`app_main`은 실제 50 Hz UDP 송신 Task에서 Serializer를 호출한다. 2026-09-01에는 같은
+Task에 GPIO17 텔레포트·GPIO19 Height-cycle 버튼의 active-low 입력과 25 ms debounce를
+통합했고, RFHC bit1·bit2와 `event_seq=0` 직렬화를 Host Test로 확인했다. 실제 버튼·UDP·Viewer
+종단 실물 검증은 남아 있다.
 
 - ESP32-S3
 - IMU Quaternion
@@ -417,9 +419,11 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 부팅 자세 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동 실물 검증
 - 로컬 통합 시험에서 LCD 색상 깨짐·녹색 줄 없이 동작
 - RFHC v1 52-byte Serializer와 Backend 공유 CRC Vector 일치
-- Python Bridge 테스트 8개, JPEG Protocol Host Test 4개, RFHC Serializer Host Test 6개 통과
+- 텔레포트·Height-cycle 버튼 GPIO 입력, 25 ms debounce, RFHC held-state bit 연결 구현
+- Python Bridge 테스트 8개, JPEG Protocol Host Test 4개, RFHC Serializer Host Test 7개 통과
 
-위 테스트 수는 Embedded 저장소의 최신 기록이다. 이번 공통 문서 갱신에서는 다시 실행하지 않았다.
+위 테스트 수는 Embedded 저장소의 최신 기록이다. 2026-09-01에는 RFHC Serializer Host Test와
+PC 모의 송신기 self-test를 다시 실행했고, 나머지는 이전 검증 기록이다.
 
 ### 실물 검증 필요
 
@@ -437,8 +441,7 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 장치별 RSSI Offset 측정
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
-- 단일 Handheld Firmware에 텔레포트·Height-cycle 버튼 2개 GPIO Task 추가(debounce, 레벨
-  상태를 RFHC bit1·bit2에 실어 매 Packet 전송 — 3-packet 반복·`event_seq` 불필요)
+- 실제 버튼을 각각·동시에 눌러 RFHC bit1·bit2의 held/released 상태와 `event_seq=0` UDP Packet 확인
 - 실제 Graphics Frame으로 800×480 palette256 수신·표시의 300초 지속 속도 계측
 
 ## 11. 핸드헬드 하드웨어 계획
@@ -457,12 +460,23 @@ PSRAM: 8 MB
 
 - IMU 읽기
 - Quaternion 전송
-- 버튼 이벤트 전송
+- 버튼의 debounce된 현재 눌림 상태 전송
 - RFJF Frame 수신
 - zlib 해제와 palette lookup 또는 JPEG 디코딩
 - LCD 출력
 
 3DGS 렌더링, Sionna RT, 위치 추정 알고리즘은 PC 또는 Backend에서 실행한다.
+
+버튼 배선:
+
+| 기능 | GPIO | 극성·Pull | Debounce |
+|---|---:|---|---:|
+| 텔레포트 held | GPIO17 | active-low, 내부 Pull-up | 25 ms |
+| Height-cycle held | GPIO19 | active-low, 내부 Pull-up | 25 ms |
+
+텔레포트 버튼은 누른 채 조준하고 떼는 동작 중 손목 방향이 흐트러지지 않도록 검지로 누를
+수 있는 측면에, Height-cycle 버튼은 동시에 잘못 누르지 않도록 윗면 또는 뒤쪽에 분리해 둔다.
+GPIO19는 Native USB D-와 공유하므로 Flash·Log에는 USB-to-UART 포트를 사용한다.
 
 ### LCD
 
@@ -510,8 +524,7 @@ LCD GRAM
 
 ```text
 ImuTask
-ControlTxTask
-InputTask
+ControlTxTask (버튼 GPIO sample·debounce + RFHC 50 Hz UDP)
 VideoRxTask
 IndexedInflateTask / JpegDecodeTask
 DisplayTask
@@ -542,6 +555,7 @@ HealthTask
   edge마다 PC Viewer가 Heatmap Z-height 프리셋을 한 칸 순환한다.
 - 두 버튼 모두 3-packet 반복이나 `event_seq` 관리가 필요 없다(기존 Recenter/Position
   Update 버튼과 다른 점 — §13 참고).
+- 별도 InputTask를 만들지 않고 기존 ControlTxTask의 20 ms 주기에서 두 GPIO를 읽는다.
 
 ### Video
 
@@ -565,8 +579,8 @@ HealthTask
 6. Device Offset을 측정한다.
 7. 1~2시간 안정성 시험을 수행한다.
 8. Fault Injection 시험을 수행한다.
-9. `handheld_jpeg_stream`에 텔레포트·Height-cycle 버튼 2개 GPIO Task를 추가한다.
-10. 두 버튼의 debounce된 레벨 상태를 RFHC bit1·bit2에 실어 매 Packet 전송하도록 연결한다.
+9. 실제 버튼을 각각·동시에 눌러 UDP Packet의 RFHC bit1·bit2와 `event_seq=0`을 검증한다.
+10. Handheld→Backend→Graphics에서 텔레포트 hold/release와 Height-cycle press edge를 실물 검증한다.
 11. 실제 장치에서 800×480 palette256 Frame의 지연·FPS·재연결을 300초 이상 검증한다.
 
 ## 14. 미확정 항목

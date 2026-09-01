@@ -1,6 +1,6 @@
 # RFVisualizer 현재 진행 상태
 
-- 기준일: **2026-08-28**
+- 기준일: **2026-09-01**
 - 기준: 각 저장소 `main`과 `/data/RFVisualizer_Workspace`의 최신 실험 산출물
 
 ## 1. 한 줄 요약
@@ -20,8 +20,8 @@
 | Network Backend | Export/QC/복구 로직 검증 | 실센서 전체 리허설은 미검증 |
 | RFJF Image Relay | 구현·테스트 완료 | Graphics→Handheld 실기기 종단 확인(8/27), 300초 지속 성능 미검증 |
 | Handheld RFJF·LCD | palette256/RGB332 Graphics producer→Relay→LCD 실기기 종단 출력 확인(8/27) | 300초 지속 FPS·지연·drop 미계측 |
-| Handheld BNO085·LCD | 약 50 Hz Quaternion·로컬 3D 시점 이동 실물 검증 | 버튼·RFHC UDP·Graphics 통합 미완료 |
-| Handheld Control RFHC v1 | Backend/Embedded 구현·공유 Vector 일치 | 실제 UDP 송신 미검증 |
+| Handheld BNO085·LCD | 약 50 Hz Quaternion·로컬 3D 시점 이동 실물 검증 | 버튼·RFHC UDP·Graphics 실물 통합 미완료 |
+| Handheld Control RFHC v1 | 50 Hz UDP 송신과 버튼 held-state Firmware 구현·Host Test 7개 통과 | 실제 버튼 UDP 송신 미검증 |
 | Graphics Handheld Consumer | 구현·C++ Test 통과 | 실제 BNO085 축·버튼·실행 화면 미검증 |
 | 3D RF Volume Bundle | 구현·테스트 완료 | 높이 방향 Residual은 외삽, 논문 근거 불가 |
 | SIBR RF Volume·영상 Producer | C++ 소스 Git 반영, palette256 기본 전환, 새 Build Directory 빌드 통과 | Viewer 실행 화면(Display 필요)·300초 지속 성능 미검증 |
@@ -99,7 +99,8 @@
 - ESP32 RSSI Node/Gateway, STM32 Parser, Serial-MQTT Bridge
 - RSSI 허용 하한 `-110 dBm`과 AP Channel 기본값 6 반영
 - Bridge Python 테스트 8개, STM32 Parser Host Test, JPEG Protocol Host Test 4개 통과
-- RFHC v1 Serializer Host Test 6개 통과, Backend 공유 52-byte/CRC Vector 일치
+- RFHC v1 Serializer Host Test 7개 통과, Backend 공유 52-byte/CRC Vector와 버튼 bit1·bit2 일치
+- 기존 ControlTxTask에 GPIO17·GPIO19 active-low 입력, 25 ms debounce, RFHC held-state 송신 통합
 - BNO085 독립 Quaternion 실물 시험 완료
 - 서버 더미 JPEG의 TCP 수신·디코드·NT35510 LCD 실물 출력 완료
 - BNO085와 NT35510 LCD 동시 구동, 부팅 자세 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동 실물 검증
@@ -111,7 +112,7 @@
 
 - RSSI 장치 3~5대 정·역방향 전체 리허설과 1~2시간 안정성
 - 고정 BSSID/Channel, 사전·사후 Device Offset, Fault Injection
-- 버튼·RFHC UDP 송신·네트워크 palette256 영상-LCD 경로의 단일 Handheld Firmware 통합
+- 실제 버튼의 RFHC held/released UDP 상태와 Handheld→Backend→Graphics 동작 검증
 - 실제 Graphics Frame으로 800×480 palette256 수신·디코드·표시의 300초 지속 속도
 
 ### 네트워크
@@ -165,11 +166,11 @@ sample_seq, event_seq(2026-08-28부터 미사용), timestamp_ms, quaternion x/y/
 500 ms timeout 후 stale
 ```
 
-Backend Parser·Listener, Embedded Serializer는 구현됐다(Recenter·Position Update 버튼
-기준). **2026-08-28 기획 변경**으로 `flags` bit1·bit2가 텔레포트·Height-cycle 버튼
-레벨 상태로 바뀌었고, Graphics Consumer는 이미 새 규격으로 구현·C++ Test 검증까지
-마쳤다. Backend·Embedded는 아직 구 규격이며 작업 지시서를 전달했다(`INTERFACE.md` §11).
-실제 ESP32-S3 UDP 송신, 버튼 GPIO, `q_mount`와 BNO085 실물 축 시험은 아직 남아 있다.
+Backend Parser·Listener, Embedded Serializer, Graphics Consumer는 구현됐다. Graphics는
+`/handheld/control`을 구독해 Camera 자세와 버튼 동작을 적용한다. Embedded는 실제 50 Hz
+ControlTxTask에 두 버튼의 debounce된 레벨 상태 송신을 연결했다. 실제 ESP32-S3 버튼 UDP
+송신, `q_mount`와 BNO085 실물 축 시험은 아직 남아 있다.
+WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 
 ### 좌표 관리
 
@@ -192,7 +193,7 @@ Backend Parser·Listener, Embedded Serializer는 구현됐다(Recenter·Position
 3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
 4. Display가 있는 장비에서 SIBR를 실행해 Heatmap과 Handheld Camera 동작을 확인한다.
 5. 실제 BNO085로 Yaw·Pitch·Roll 축과 `q_mount`를 확정한다.
-6. Embedded의 검증된 BNO085·LCD 로컬 통합에 텔레포트·Height-cycle 버튼(RFHC UDP)·네트워크 palette256 영상 경로를 연결해 단일 Firmware로 통합한다.
+6. 실제 버튼 RFHC UDP 송신과 Handheld→Backend→Graphics 텔레포트·Height-cycle 동작을 검증한다.
 7. Graphics→Relay→Handheld 800×480 영상 경로의 300초 지속 FPS·지연·drop을 계측한다.
 
 ## 8. 저장소 기준
