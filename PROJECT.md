@@ -160,8 +160,10 @@ ESP32-S3 LCD
 
 5. **핸드헬드는 Thin Client다.**
 
-6. **Camera Orientation과 Position을 분리한다.**  
-   Orientation은 지속 갱신하고 Position은 버튼 입력 시 갱신한다. 위치 추정 알고리즘은 미확정이다.
+6. **Camera Orientation은 지속 갱신, 이동은 물리 버튼 2개로 조작한다(2026-08-28 기획 변경).**  
+   버튼식 Position Update·Recenter는 폐기했다. 대신 버튼 1은 텔레포트 이동(누르는 동안 조준,
+   떼면 이동), 버튼 2는 Heatmap Z-height 프리셋 순환을 맡는다. 실제 Position 추정 알고리즘은
+   여전히 미확정이며 이 두 버튼과 무관하다.
 
 7. **파트 간 규격은 현재 동작 코드에 맞춘다.**
 
@@ -192,7 +194,8 @@ ESP32-S3 LCD
 ### 최종 통합
 
 - 방향 입력이 Viewer Camera에 반영
-- 버튼식 위치 갱신
+- 텔레포트 버튼(누르는 동안 조준, 떼면 이동)
+- Height-cycle 버튼(Heatmap Z-height 프리셋 순환)
 - RFJF Frame 전송
 - ESP32-S3 LCD 출력
 - End-to-End 지연과 Frame Drop 측정

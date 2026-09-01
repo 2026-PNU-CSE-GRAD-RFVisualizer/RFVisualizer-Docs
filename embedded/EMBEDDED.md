@@ -56,9 +56,12 @@ Serializer는 Component에 포함됐지만 `app_main`의 실제 UDP 송신 Task�
 - ESP32-S3
 - IMU Quaternion
 - UDP Orientation 전송
-- 방향 Recenter 버튼
-- Position Update 버튼
+- 텔레포트 버튼(누르는 동안 조준, 떼면 이동)
+- Heatmap Z-height 프리셋 순환 버튼
 - PC Viewer Camera 방향 갱신
+
+2026-08-28에 기획이 바뀌어 방향 Recenter 버튼·Position Update 버튼은 폐기했다. 상세는
+`TASK_EMBEDDED_HANDHELD_BUTTONS.md` 참고.
 
 ### 2.3 MVP-C: JPEG·LCD
 
@@ -434,8 +437,8 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 장치별 RSSI Offset 측정
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
-- 단일 Handheld Firmware에 버튼 Task 추가
-- 버튼 Event 3 Packet 반복과 `sample_seq`·`event_seq` 관리
+- 단일 Handheld Firmware에 텔레포트·Height-cycle 버튼 2개 GPIO Task 추가(debounce, 레벨
+  상태를 RFHC bit1·bit2에 실어 매 Packet 전송 — 3-packet 반복·`event_seq` 불필요)
 - 실제 Graphics Frame으로 800×480 palette256 수신·표시의 300초 지속 속도 계측
 
 ## 11. 핸드헬드 하드웨어 계획
@@ -520,18 +523,22 @@ HealthTask
 
 - IMU Orientation은 지속적으로 갱신
 - `INTERFACE.md`의 RFHC v1로 Backend UDP `9200`에 50 Hz 전송
-- Recenter 버튼 지원
 - Yaw Drift는 실제 장치 시험 후 처리 방식 결정
 - 현재 장착은 Embedded `q_mount=identity`와 Graphics 고정 축 변환 조합으로 Yaw·Pitch·Roll 방향/부호 검증 완료
 - 센서 장착 방향 변경 시 `q_mount` 또는 Graphics 고정 변환 재검증
 
-### Position
+### 버튼 (2026-08-28 기획 변경, 상세는 `TASK_EMBEDDED_HANDHELD_BUTTONS.md`)
 
-- 연속 6DoF 추적을 사용하지 않음
-- 평상시 Camera Position 유지
-- Position Update 버튼 입력 시 갱신 요청
-- 실제 Position 계산은 PC 또는 Backend 담당
-- 설정 좌표 Provider는 통합 시험용이며 실제 위치 추정 완료로 취급하지 않음
+방향 Recenter·Position Update 버튼 기획은 폐기했다. 물리 버튼 2개를 다음 용도로 쓴다.
+연속 6DoF 추적은 여전히 쓰지 않는다 — 실제 Position 계산은 PC/Backend 담당, 버튼은 값을
+직접 계산하지 않고 상태만 올린다.
+
+- **텔레포트 버튼**(RFHC bit1): 누르는 동안(레벨 상태) 1을 매 Packet 싣는다. PC Viewer가
+  누른 동안 조준·뗄 때 이동을 전부 처리한다. Embedded는 debounce된 물리 상태만 올린다.
+- **Height-cycle 버튼**(RFHC bit2): 누르는 동안(레벨 상태) 1을 매 Packet 싣는다. press
+  edge마다 PC Viewer가 Heatmap Z-height 프리셋을 한 칸 순환한다.
+- 두 버튼 모두 3-packet 반복이나 `event_seq` 관리가 필요 없다(기존 Recenter/Position
+  Update 버튼과 다른 점 — §13 참고).
 
 ### Video
 
@@ -555,8 +562,8 @@ HealthTask
 6. Device Offset을 측정한다.
 7. 1~2시간 안정성 시험을 수행한다.
 8. Fault Injection 시험을 수행한다.
-9. `handheld_jpeg_stream`에 Position Update/Recenter 버튼 Task를 추가한다.
-10. 버튼 Event 3 Packet 반복과 `event_seq`를 구현한다.
+9. `handheld_jpeg_stream`에 텔레포트·Height-cycle 버튼 2개 GPIO Task를 추가한다.
+10. 두 버튼의 debounce된 레벨 상태를 RFHC bit1·bit2에 실어 매 Packet 전송하도록 연결한다.
 11. 실제 장치에서 800×480 palette256 Frame의 지연·FPS·재연결을 300초 이상 검증한다.
 
 ## 14. 미확정 항목

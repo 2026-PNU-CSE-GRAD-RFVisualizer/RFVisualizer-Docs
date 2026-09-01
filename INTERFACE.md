@@ -662,7 +662,12 @@ Handheld 설정 좌표 Provider 상태:
 - 현재 시연 좌표: `pnu_3f_corridor_metric_v1`, `demo-1=(21.40, 17.80, 1.60)`
 - 실제 위치 추정 알고리즘 없음
 - Graphics Viewer의 `/handheld/control` Consumer는 구현·자동 검증 완료, 실기기 종단은 미검증
-- Handheld Position Update의 Backend 처리와 accepted/rejected 응답은 구현됐고, Graphics는 §11.6 규칙으로 적용한다
+
+**2026-08-28 기획 변경**: Position Update 버튼 기획을 폐기하면서 위 Provider를 트리거하던
+`position_update` WS Message(§11.6)도 폐기했다. `PositionProvider`/`ConfiguredPositionProvider`와
+REST Endpoint(`/handheld/positions`, `/handheld/position/active`) 코드 자체는 지우지 않고
+남겨둔다 — 다른 용도(수동 테스트, 향후 위치 추정 연동)로 다시 쓸 수 있으므로 Network 파트
+재량으로 유지한다. 다만 버튼으로 이어지는 경로는 없다.
 
 설정 좌표 Provider는 통합 시연용이며 구현 완료된 위치 추정 알고리즘으로 취급하지 않는다. 좌표 단위는 meter, `+Z`는 위쪽이며 Backend Position과 Graphics Scene의 `frame_id`가 같아야 한다.
 
@@ -671,6 +676,11 @@ Handheld 설정 좌표 Provider 상태:
 ## 11. Handheld Control Interface
 
 Embedded와 Backend가 RFHC v1 Wire 규격과 공유 Test Vector를 검증했다. Backend Parser·UDP Listener와 Embedded Serializer는 구현됐고, Graphics의 `/handheld/control` Consumer와 Camera 적용도 구현·자동 검증했다. 실제 ESP32-S3 UDP 송신과 BNO085 실물 축 시험은 남아 있다.
+
+**2026-08-28 기획 변경**: Position Update 버튼·Recenter 버튼 기획은 폐기했다. bit1·bit2를
+**텔레포트 버튼**·**Height-cycle 버튼**으로 재정의한다(§11.3). 이 절은 새 정의를
+반영했고, 지금 동작하는 코드는 아직 구현 전이다 — 각 파트 작업 지시는
+`embedded/EMBEDDED.md` §2.2·§12, `network/NETWORK.md` §13을 따른다.
 
 ### 11.1 전송
 
@@ -697,7 +707,7 @@ Magic은 ASCII `RFHC`, 정수값 `0x52464843`이다. C Struct를 그대로 전�
 | 8 | 4 | `device_id` | `1` = `handheld-01`, RSSI Node ID와 별도 Namespace |
 | 12 | 4 | `session_id` | 부팅마다 바뀌는 non-zero 값 |
 | 16 | 4 | `sample_seq` | Packet마다 1 증가, wrap 허용 |
-| 20 | 4 | `event_seq` | 새 버튼 Event마다 1 증가 |
+| 20 | 4 | `event_seq` | 2026-08-28부터 미사용, `0` 고정 송신(구조체·CRC 계산에는 영향 없음) |
 | 24 | 8 | `timestamp_ms` | SNTP 동기화 시 Unix epoch ms, 아니면 `0` |
 | 32 | 4 | `quaternion_x` | Handheld 논리 축 Quaternion X |
 | 36 | 4 | `quaternion_y` | Handheld 논리 축 Quaternion Y |
@@ -720,14 +730,22 @@ Check("123456789"): 0xCBF43926
 | Bit | 이름 | 의미 |
 |---:|---|---|
 | 0 | `ORIENTATION_VALID` | finite이며 norm 0.97~1.03인 Quaternion |
-| 1 | `REQUEST_POSITION_UPDATE` | Backend 최신 유효 Position 적용 요청 |
-| 2 | `RECENTER_ORIENTATION` | 현재 방향을 Graphics 기준 정면으로 설정 요청 |
+| 1 | `TELEPORT_BUTTON_HELD` | 텔레포트 버튼을 지금 물리적으로 누르고 있으면 1 (레벨 상태) |
+| 2 | `HEIGHT_CYCLE_BUTTON_HELD` | Height-cycle 버튼을 지금 물리적으로 누르고 있으면 1 (레벨 상태) |
 | 3 | `TIME_SYNCED` | `timestamp_ms`가 Unix epoch ms로 유효 |
 | 4~7 | Reserved | 송신 시 0, 수신 시 non-zero이면 거부 |
 
-버튼 Event는 동일 Flag와 `event_seq`를 3개 연속 Packet에 반복한다. Backend는 `(device_id, session_id, event_seq, flag)`로 중복을 제거하고 정확히 한 번 처리한다.
+bit1·bit2는 **레벨 상태**다. Embedded는 debounce된 물리 버튼의 그 순간 상태를 매
+Packet(50 Hz)에 그대로 싣는다. bit0(`ORIENTATION_VALID`)과 같은 취급이며, RECENTER/POSITION
+UPDATE가 쓰던 "3-packet 반복 + `event_seq` dedup" 방식은 **쓰지 않는다.** Press/hold/release
+edge 판정은 수신 측(Graphics)이 연속된 Frame의 레벨 값 변화로 직접 계산한다. Packet
+하나가 유실돼도 다음 Packet에서 상태가 이어지므로 Backend가 중복 제거를 할 필요가 없다.
 
 `TIME_SYNCED=0`이면 `timestamp_ms=0`이며 Backend 수신 시각을 사용한다. `session_id`가 바뀌면 Backend는 Handheld 재부팅으로 처리하고 Sequence 상태를 초기화한다.
+
+> 2026-08-28 이전에는 bit1=`REQUEST_POSITION_UPDATE`, bit2=`RECENTER_ORIENTATION`이었고
+> 둘 다 edge 이벤트였다. 그 기획은 폐기했다. `event_seq` 필드 자체는 Packet 구조에 남지만
+> bit1·bit2에는 더 이상 쓰지 않는다.
 
 ### 11.4 Quaternion 좌표축
 
@@ -764,46 +782,35 @@ Path는 `/handheld/control` 고정이다. Graphics는 application-level Message�
 
 #### Message
 
-`handheld_state`
+`handheld_state` (유일한 Message 타입. `position_update`는 2026-08-28에 폐기했다)
 
 | 필드 | 형 | 비고 |
 |---|---|---|
 | `type` | string | `"handheld_state"` |
 | `device_id` | string | 현재 Graphics는 `handheld-01`만 받는다 |
-| `session_id`, `sample_seq`, `event_seq` | uint32 | wrap 허용 |
+| `session_id`, `sample_seq` | uint32 | wrap 허용 |
 | `server_timestamp_ms` | integer | |
-| `orientation_valid`, `recenter_event`, `position_update_event`, `stale` | boolean | |
+| `orientation_valid`, `teleport_button_held`, `height_cycle_button_held`, `stale` | boolean | 전부 그 순간의 레벨 상태 |
 | `quaternion` | `{x,y,z,w}` finite number | Handheld 논리 축 |
-
-`position_update`
-
-| 필드 | 형 | 비고 |
-|---|---|---|
-| `type` | string | `"position_update"` |
-| `device_id` | string | |
-| `event_seq` | uint32 | 대응하는 `handheld_state`의 `event_seq` |
-| `accepted` | boolean | |
-| `position` | object 또는 null | accepted면 `frame_id`, finite `x`,`y`,`z`, `confidence`, `source` |
-| `reason` | string | rejected일 때 |
 
 Malformed 또는 모르는 Message는 연결을 끊지 않고 경고 후 폐기한다.
 
 #### Graphics 적용 규칙
 
-- Orientation은 Position과 독립적으로 계속 적용한다.
+- Orientation은 계속 적용한다. Position은 이 경로로 갱신하지 않는다(§10 `PositionEstimate`
+  경로와는 별개다).
 - 새 sample은 `0 < (new_sample_seq - previous_sample_seq) mod 2^32 < 2^31`일 때만 Camera에 반영한다.
   duplicate와 out-of-order는 버린다. `stale=true`는 같은 `sample_seq`여도 먼저 처리한다.
-- Session이 바뀌면 이전 Session을 물러나게 하고 sample·event 상태를 초기화한다.
+- Session이 바뀌면 이전 Session을 물러나게 하고 sample 상태를 초기화한다.
   물러난 Session의 늦은 Packet은 영구 거부한다.
-- Recenter와 Position은 `(device_id, session_id, event_seq, event 종류)`로 각각 중복을 제거한다.
-  버튼 Event의 3회 반복, stale snapshot, 재접속 snapshot에서 최대 한 번만 적용한다.
-- Position은 `position_update` 응답과 `position_update_event=true` state가 **같은 WebSocket
-  연결 안에서** `(connection_epoch, device_id, event_seq)`로 짝지어졌고, `accepted=true`,
-  숫자가 모두 finite, `position.frame_id`가 Scene manifest의 `frameId`와 정확히 같을 때만
-  적용한다. 두 Message의 도착 순서는 어느 쪽이든 지원한다.
-- Position은 Camera translation만 바꾸고 rotation은 보존한다.
-- 연결이 끊기면 완성되지 않은 Position 짝은 버린다. Backend는 `position_update`를
-  cache/replay하지 않으므로 **단절 중 놓친 Position은 복구할 수 없다.**
+- `teleport_button_held`·`height_cycle_button_held`는 **레벨 상태를 그대로 받는다.**
+  `event_seq` 기반 중복 제거나 3회 반복 처리는 하지 않는다 — Graphics가 연속 Frame의
+  값 변화로 press(0→1)/hold(1)/release(1→0) edge를 직접 계산한다(키보드 입력과 동일 패턴).
+  `stale=true`인 Frame은 두 값 모두 0으로 취급해 눌림이 이어진 것으로 오판하지 않는다.
+- 텔레포트는 `teleport_button_held`의 hold~release로 `ArcTeleportController`를 그대로
+  구동한다. 조준 방향은 이미 적용 중인 Camera rotation(§11.6 위 규칙)을 그대로 쓴다.
+- Height-cycle은 `height_cycle_button_held`의 press edge마다 RF Volume manifest의 다음
+  높이 층으로 1칸 순환한다.
 - WebSocket 재접속만으로는 Session/Sample/Event 중복 제거 상태를 초기화하지 않는다.
 
 ---

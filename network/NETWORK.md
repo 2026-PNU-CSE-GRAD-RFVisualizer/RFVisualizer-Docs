@@ -188,6 +188,11 @@ Handheld RFHC v1 ─UDP 9200─▶ Parser/Session Tracker
 - Graphics의 `/handheld/control` Consumer는 구현·C++ Test 통과했으나 실제 BNO085 축·실행 화면 미검증
 - Camera 축·Recenter·Position 종단 시험 미완료
 
+**2026-08-28 기획 변경 예정**: 위 구현은 Recenter·Position Update 버튼 기획 기준이다.
+버튼 기획이 텔레포트·Height-cycle 2개로 바뀌었다. `INTERFACE.md` §11은 이미 새 규격으로
+갱신했고, `TASK_NETWORK_HANDHELD_BUTTONS.md`에 이 파트가 할 작업을 정리해 뒀다. 작업이
+끝나면 이 절을 "구현·실물 검증 완료"로 갱신한다.
+
 ## 14. 설정 (`config.py` / `.env`)
 
 ```text
