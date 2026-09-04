@@ -679,8 +679,11 @@ Embedded와 Backend가 RFHC v1 Wire 규격과 공유 Test Vector를 검증했다
 
 **2026-08-28 기획 변경**: Position Update 버튼·Recenter 버튼 기획은 폐기했다. bit1·bit2를
 **텔레포트 버튼**·**Height-cycle 버튼**으로 재정의한다(§11.3). 이 절은 새 정의를
-반영했다. 2026-09-01 Embedded Firmware의 기존 50 Hz ControlTxTask에도 두 버튼의
-debounce된 held-state 송신이 연결됐으며, 실제 장치 UDP 종단 검증은 남아 있다.
+반영했다. 세 파트 모두 새 규격으로 구현·테스트를 마쳤다 — Graphics(`HandheldControlClient`,
+CTest), Embedded(2026-09-01, `ControlTxTask`에 두 버튼 debounce·held-state 송신 연결,
+Host Test), Network(2026-09-01, GitHub `main` `a9789d9`, `pytest` 57 passed 확인 — Event
+dedup·`position_update` Message 삭제와 부재 회귀 테스트까지 포함). 남은 건 세 장치를
+실제로 연결한 UDP 종단 검증이다.
 
 ### 11.1 전송
 

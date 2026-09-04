@@ -162,21 +162,26 @@ Handheld 경로는 RSSI 실험 모드와 독립적으로 켤 수 있으며 기�
 ```text
 Handheld RFHC v1 ─UDP 9200─▶ Parser/Session Tracker
                                   ├─ 500 ms stale 판정
-                                  ├─ 버튼 Event 중복 제거
-                                  ├─ ConfiguredPositionProvider
+                                  ├─ 텔레포트·Height-cycle 버튼 레벨 상태 그대로 전달
                                   └─ WS /handheld/control ─▶ Graphics
 ```
 
+**2026-09-01 기획 변경 반영 완료(GitHub `main` `a9789d9` 확인, `pytest tests/` 57 passed
+1 skipped 재현 확인).** RFHC bit1·bit2를 텔레포트·Height-cycle 버튼 레벨 상태로 재정의하고
+`handheld_state`에 `teleport_button_held`·`height_cycle_button_held`로 그대로 실어 보낸다.
+`event_seq` 기반 Event 중복 제거와 `position_update` Message는 코드에서 완전히 제거했다
+(부재를 확인하는 회귀 테스트 포함). `PositionProvider`/`ConfiguredPositionProvider`와
+REST API는 지우지 않고 그대로 남겨 관리용으로 쓴다.
+
 구현된 항목:
 
-- RFHC v1 52-byte Parser, CRC와 Quaternion norm 검증
-- Device/Session/Sample Sequence 통계
-- `(device_id, session_id, event_seq, flag)` Event 중복 제거
-- UDP `9200` Listener와 500 ms stale 전환
-- `PositionProvider`와 설정 좌표 기반 `ConfiguredPositionProvider`
-- Position의 null, 2초 stale, confidence, `frame_id` 검증
-- `WS /handheld/control`
+- RFHC v1 52-byte Parser, CRC와 Quaternion norm 검증, Reserved bit(4~7) 거부
+- Device/Session/Sample Sequence 통계(중복·누락·out-of-order)
+- UDP `9200` Listener와 500 ms stale 전환(재전환 시 마지막 상태를 `stale=true`로 재방송)
+- `PositionProvider`와 설정 좌표 기반 `ConfiguredPositionProvider` — 버튼과 분리된 관리용
+- `WS /handheld/control` — 접속 즉시 최신 상태 1개 전송, Graphics는 Message를 보내지 않음
 - `GET /handheld/status`, `GET /handheld/positions`, `POST /handheld/position/active`
+- 공유 CRC Test Vector(`0x0AE927E5`) 일치 확인, `device_id`/`source_ip` 필터 테스트
 
 현재 설정 좌표는 `pnu_3f_corridor_metric_v1`의 `demo-1=(21.40, 17.80, 1.60)`이다.
 이는 1차 통합 시연용 고정 좌표이며 실제 위치 추정 알고리즘이 아니다.
@@ -184,15 +189,10 @@ Handheld RFHC v1 ─UDP 9200─▶ Parser/Session Tracker
 현재 제한:
 
 - `handheld_enabled=false`가 기본값
-- 실제 ESP32-S3 UDP 송신 미연결
-- Graphics의 `/handheld/control` Consumer는 구현·C++ Test 통과했으나 실제 BNO085 축·실행 화면 미검증
-- Camera 축·Recenter·Position 종단 시험 미완료
-
-**2026-08-28 기획 변경**: 위 구현은 Recenter·Position Update 버튼 기획 기준이다. 버튼
-기획이 텔레포트·Height-cycle 2개로 바뀌었고 `INTERFACE.md` §11을 새 규격으로 갱신했다.
-작업 지시서를 이 파트에 전달 완료했다. 그래픽스 쪽 `HandheldControlClient`·Consumer는
-이미 새 규격으로 구현·CTest 검증까지 마쳤다(`graphics/GRAPHICS.md` §8.3 참고). 이 파트
-작업이 끝나면 이 절을 "구현·실물 검증 완료"로 갱신한다.
+- 실제 ESP32-S3 UDP 송신 미연결(Embedded 쪽 버튼 GPIO·펌웨어 통합 대기)
+- Graphics의 `/handheld/control` Consumer는 새 규격으로 구현·C++ Test 통과했으나 실제
+  BNO085 축·실기기 버튼·실행 화면 미검증
+- Camera 축·텔레포트·Height-cycle 실기기 종단 시험 미완료
 
 ## 14. 설정 (`config.py` / `.env`)
 
@@ -232,7 +232,7 @@ py rehearsal.py --reverse         # 사전·사후 offset + 정+역 in-process �
 ## 17. 현재 구현 상태
 
 - **로직 검증 완료**: 마이그레이션·상태관리·MQTT 저장 분기·시간매칭·사전사후 offset·Export/QC.
-- **Handheld Backend 구현 완료**: RFHC Parser·UDP Listener·Event 중복 제거·PositionProvider·Graphics WebSocket. 기본 비활성이고 실기기 종단은 미검증.
+- **Handheld Backend 구현 완료(2026-09-01, 텔레포트·Height-cycle 버튼 규격)**: RFHC Parser·UDP Listener·버튼 레벨 상태 그대로 전달·PositionProvider(관리용, 버튼과 분리)·Graphics WebSocket. 기본 비활성이고 실기기 종단은 미검증.
 - **실물 확인 완료**: MQTT 수신(브로커+load_test+백엔드), 새 UI 로드.
 - **미검증**: 실센서 5대 정방향 전체 리허설, 브라우저 새로고침/MQTT 재연결/Backend 중단의 실동작.
 - **별도 구현·검증 완료**: RFJF 22-byte Frame 기반 `image_relay`와 Host Test 8개.

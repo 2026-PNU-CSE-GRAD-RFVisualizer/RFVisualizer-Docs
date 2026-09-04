@@ -183,7 +183,7 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 
 1. **논문 위험:** 분석 수치는 좋아졌지만 누락 구간·BSSID 공란·사후 Offset 부재·잠정 Scene 때문에 최종 근거가 아니다.
 2. **통합 위험(영상):** Graphics→Relay→Handheld 영상 경로는 2026-08-27 실기기 종단 출력을 확인했으나, 300초 지속 FPS·지연·drop 등 정량 성능은 아직 없다.
-3. **통합 위험(제어):** RFHC(방향·버튼) 경로는 Graphics가 2026-08-28 신규 버튼 규격(텔레포트·Height-cycle)까지 구현·CTest 검증을 마쳤지만, Backend/Embedded는 아직 구 규격(Recenter·Position Update)이고 실제 UDP 종단 검증도 없다.
+3. **통합 위험(제어):** RFHC(방향·버튼) 경로는 Graphics·Backend·Embedded 세 파트 모두 2026-09-01 기준 신규 버튼 규격(텔레포트·Height-cycle)으로 구현·테스트를 마쳤다(Backend는 이번에 GitHub `main`을 직접 clone해 `pytest` 57 passed 재현 확인). 남은 건 세 장치를 실제로 연결한 UDP 종단 검증뿐이다.
 4. **환경 위험:** 현재 Workspace에는 Display가 없어 Viewer 실행 화면을 확인할 수 없다. Graphics Handheld 연결은 C++ Test까지만 검증됐고 실제 렌더 화면과 조작감은 미확인이다.
 
 ## 7. 다음 작업
@@ -198,17 +198,18 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 
 ## 8. 저장소 기준
 
-2026-08-28 이번 문서 갱신 직전, 이 Workspace에 로컬 clone이 있는 두 저장소의 `main`(=`origin/main`, clean):
+2026-09-01 이번 문서 갱신 직전 확인:
 
-| 저장소 | GitHub `main` |
-|---|---|
-| RFVisualizer | `fff09b1` (텔레포트·Height-cycle 버튼 구현이 아직 이 커밋 위 작업 트리에만 있고 커밋되지 않음) |
-| RFVisualizer-Docs | `d4f8bc0` |
+| 저장소 | GitHub `main` | 확인 방법 |
+|---|---|---|
+| RFVisualizer | `6184f90` | 이 Workspace 로컬 clone, working tree clean |
+| RFVisualizer-Docs | `ef42e25` | 이 Workspace 로컬 clone, working tree clean |
+| Network-Backend-Article | `a9789d9` | 이번에 임시 clone해 직접 확인, `pytest tests/` 57 passed 1 skipped 재현 |
 
-Embedded와 Network-Backend-Article은 이 Workspace에 로컬 clone이 없어 직접 확인할 수
-없다. 각 파트 문서(`embedded/EMBEDDED.md`, `network/NETWORK.md`)에 적힌 팀원 보고를
-기준으로 삼았으며, 이번 갱신에서 원격 `main` 해시나 테스트를 다시 확인하지 않았다.
+Embedded는 이 Workspace에 로컬 clone이 없어 직접 확인할 수 없다. `embedded/EMBEDDED.md`에
+적힌 팀원 보고를 기준으로 삼았다.
 
-이번 갱신에서 Graphics의 `handheld_control`·`arc_teleport`를 포함한 CTest 6개를 로컬
-빌드로 재실행해 통과를 확인했다(§4 그래픽스 참고). Network·Embedded 테스트는 재실행하지
-않았다 — 각 파트 테스트 수는 해당 저장소·문서의 최신 기록을 인용했다.
+이번 갱신에서 Graphics의 `handheld_control`·`arc_teleport`를 포함한 CTest 6개와
+Network의 `pytest tests/`(57 passed, 1 skipped)를 로컬에서 재실행해 통과를 확인했다.
+Embedded 테스트는 재실행하지 않았다 — 그 파트 테스트 수는 `embedded/EMBEDDED.md`의
+최신 기록을 인용했다.
