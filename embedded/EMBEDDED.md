@@ -52,8 +52,10 @@ BNO085 독립 Quaternion 실물 시험과 RFHC v1 Serializer 공유 Vector 검�
 정면으로 삼는 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동을 실물 검증했다.
 `app_main`은 실제 50 Hz UDP 송신 Task에서 Serializer를 호출한다. 2026-09-01에는 같은
 Task에 GPIO17 텔레포트·GPIO19 Height-cycle 버튼의 active-low 입력과 25 ms debounce를
-통합했고, RFHC bit1·bit2와 `event_seq=0` 직렬화를 Host Test로 확인했다. 실제 버튼·UDP·Viewer
-종단 실물 검증은 남아 있다.
+통합했고, RFHC bit1·bit2와 `event_seq=0` 직렬화를 Host Test로 확인했다. 2026-09-06 최종
+실물 시험에서는 두 버튼의 held/released UDP 상태와 BNO085 Yaw·Pitch·Roll 방향/부호를
+확인했고, Handheld→Backend→Graphics 종단 경로의 Camera 자세 갱신, 텔레포트 hold/release,
+Height-cycle press edge 동작까지 검증했다.
 
 - ESP32-S3
 - IMU Quaternion
@@ -67,7 +69,8 @@ Task에 GPIO17 텔레포트·GPIO19 Height-cycle 버튼의 active-low 입력과 
 
 ### 2.3 MVP-C: JPEG·LCD
 
-서버 더미 RFJF/JPEG의 수신·디코드·NT35510 LCD 실물 출력은 완료했다. 실제 Graphics producer를 포함한 종단 통합과 지속 성능 검증은 남아 있다.
+서버 더미 RFJF/JPEG의 수신·디코드·NT35510 LCD 실물 출력과 실제 Graphics producer를
+포함한 종단 출력은 완료했다. 300초 지속 FPS·지연·drop 정량 검증은 남아 있다.
 
 - TCP JPEG Frame 수신
 - JPEG 디코딩
@@ -420,12 +423,15 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 로컬 통합 시험에서 LCD 색상 깨짐·녹색 줄 없이 동작
 - RFHC v1 52-byte Serializer와 Backend 공유 CRC Vector 일치
 - 텔레포트·Height-cycle 버튼 GPIO 입력, 25 ms debounce, RFHC held-state bit 연결 구현
+- 실제 버튼을 각각·동시에 조작해 RFHC bit1·bit2 held/released UDP 상태와 `event_seq=0` 확인
+- BNO085 Yaw·Pitch·Roll 방향/부호와 `q_mount=identity`·Graphics 고정 축 변환 조합 확인
+- Handheld→Backend→Graphics Camera 자세, 텔레포트 hold/release, Height-cycle press edge 종단 실물 검증
 - Python Bridge 테스트 8개, JPEG Protocol Host Test 4개, RFHC Serializer Host Test 7개 통과
 
 위 테스트 수는 Embedded 저장소의 최신 기록이다. 2026-09-01에는 RFHC Serializer Host Test와
 PC 모의 송신기 self-test를 다시 실행했고, 나머지는 이전 검증 기록이다.
 
-### 실물 검증 필요
+### 추가 실물·정량 검증 필요
 
 - ESP32 3~5대 동시 측정
 - 실제 Gateway MAC 기반 Unicast 전송
@@ -441,7 +447,6 @@ PC 모의 송신기 self-test를 다시 실행했고, 나머지는 이전 검증
 - 장치별 RSSI Offset 측정
 - Moving Average와 Median Filter 비교
 - Watchdog과 Buffer 동작 검증
-- 실제 버튼을 각각·동시에 눌러 RFHC bit1·bit2의 held/released 상태와 `event_seq=0` UDP Packet 확인
 - 실제 Graphics Frame으로 800×480 palette256 수신·표시의 300초 지속 속도 계측
 
 ## 11. 핸드헬드 하드웨어 계획
@@ -544,8 +549,8 @@ HealthTask
 
 방향 Recenter·Position Update 버튼 기획은 폐기했다. 물리 버튼 2개를 다음 용도로 쓴다.
 그래픽스 쪽(`HandheldControlClient`·Viewer Consumer)은 이미 새 규격으로 구현·CTest
-검증까지 마쳤다(`graphics/GRAPHICS.md` §8.3). 이 파트가 실제 버튼을 연결하면 종단
-시험을 할 수 있다.
+검증까지 마쳤다(`graphics/GRAPHICS.md` §8.3). 2026-09-06에는 실제 버튼이 연결된
+Handheld로 RFHC UDP와 Viewer 종단 동작까지 실물 검증했다.
 연속 6DoF 추적은 여전히 쓰지 않는다 — 실제 Position 계산은 PC/Backend 담당, 버튼은 값을
 직접 계산하지 않고 상태만 올린다.
 
@@ -579,9 +584,7 @@ HealthTask
 6. Device Offset을 측정한다.
 7. 1~2시간 안정성 시험을 수행한다.
 8. Fault Injection 시험을 수행한다.
-9. 실제 버튼을 각각·동시에 눌러 UDP Packet의 RFHC bit1·bit2와 `event_seq=0`을 검증한다.
-10. Handheld→Backend→Graphics에서 텔레포트 hold/release와 Height-cycle press edge를 실물 검증한다.
-11. 실제 장치에서 800×480 palette256 Frame의 지연·FPS·재연결을 300초 이상 검증한다.
+9. 실제 장치에서 800×480 palette256 Frame의 지연·FPS·재연결을 300초 이상 검증한다.
 
 ## 14. 미확정 항목
 

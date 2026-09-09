@@ -107,12 +107,16 @@
 - 로컬 통합 시험에서 BNO085 약 50 Hz를 유지했고 LCD 색상 깨짐·녹색 줄 없이 동작함
 - **2026-08-27**: 실제 Graphics Frame(palette256 기본, RGB332 호환)의 ESP32-S3→NT35510 LCD
   종단 출력 확인, RGB332 대비 화질 개선 확인. 정량 FPS·지연·장시간 안정성은 미계측
+- **2026-09-06 최종 실물 확인**: 완성된 Handheld에서 BNO085 Yaw·Pitch·Roll 방향/부호와
+  `q_mount=identity` 조합, GPIO17 텔레포트·GPIO19 Height-cycle 버튼의 held/released RFHC UDP
+  상태를 확인함
+- Handheld→Backend→Graphics 종단 경로에서 Camera 자세 갱신, 텔레포트 hold/release,
+  Height-cycle press edge 동작 확인
 
-실물 검증 필요:
+추가 실물·정량 검증 필요:
 
 - RSSI 장치 3~5대 정·역방향 전체 리허설과 1~2시간 안정성
 - 고정 BSSID/Channel, 사전·사후 Device Offset, Fault Injection
-- 실제 버튼의 RFHC held/released UDP 상태와 Handheld→Backend→Graphics 동작 검증
 - 실제 Graphics Frame으로 800×480 palette256 수신·디코드·표시의 300초 지속 속도
 
 ### 네트워크
