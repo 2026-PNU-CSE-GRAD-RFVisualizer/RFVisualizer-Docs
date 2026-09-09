@@ -1,0 +1,403 @@
+# 사진 기반 실내 복원과 실측 잔차 보정을 결합한 링 복도 RF 신호장 추정 및 3D 시각화
+
+**영문 제목(안)**: Indoor RF Field Estimation and 3D Visualization by Combining Photogrammetric Reconstruction with Measurement-Based Residual Correction
+
+## Abstract
+
+This paper combines a photogrammetric 3D Gaussian Splatting scene, triangle-mesh ray tracing, and
+measured received signal strength indicator (RSSI) values in a common metric coordinate system to
+estimate an indoor RF field. A closed proxy scene derived from PGSR is used for Sionna RT, while
+five ESP32 devices provide calibration and evaluation measurements. We report an exploratory
+evaluation using 20 repeated observations collected at 10 distinct locations during forward and
+reverse passes through a ring-shaped corridor. The mean
+absolute error (MAE) is 7.64 dB for uncorrected ray tracing, 5.33 dB for measurement-only inverse
+distance weighting, 3.41 dB for residual interpolation, and 8.26 dB for global-bias correction.
+The opposite bias signs observed in line-of-sight (-10.1 dB) and non-line-of-sight (+3.4 dB)
+regions show that a single global correction does not fit these observations. The residual
+interpolation error and the 3.90 dB difference between repeated passes are of similar magnitude,
+suggesting that measurement variability is non-negligible. Because an observation from an evaluation
+location motivated adjustment of the ray-tracing interaction depth, these errors are not an independent
+hold-out estimate. The estimates are also
+exported as a six-height 3D RF volume and displayed through an SIBR-based renderer and an ESP32-S3
+handheld. The video path, IMU axes, and teleport and height-cycle button interactions were verified
+end-to-end on physical hardware; sustained frame rate, latency, and loss remain to be quantified.
+
+**Keywords**: 3D Gaussian Splatting, Sionna RT, RSSI, Residual IDW, Radio Map, Handheld Visualization
+
+## 1. 서론
+
+무선 네트워크의 품질을 분석할 때 수신 신호 세기 지표(Received Signal Strength Indicator, RSSI)는 접근이 쉽고 위치별 비교가 가능하다는 장점이 있다. 그러나 RSSI는 송신기와 수신기 사이의 거리만으로 결정되지 않는다. 직접 경로의 차폐, 벽과 바닥의 반사, 문과 금속 구조물, 수신기의 높이와 방향, 사람의 이동과 주변 무선 간섭이 측정값에 영향을 준다. 따라서 단순 거리 모델이나 소수 측정점의 보간만으로는 공간 구조에 따른 급격한 변화를 설명하기 어렵다.
+
+기존 RSSI 시각화는 주로 평면 도면 위에 측정값을 보간한 2차원 히트맵을 활용한다. 이러한 방식은 신호가 강하거나 약한 위치를 빠르게 파악하는 데 유용하지만, 실제 공간의 벽과 물체를 함께 보면서 신호 변화를 해석하기 어렵다. 실내 공간을 수작업 CAD 모델로 구축하는 방법도 가능하지만 모델 구축 비용이 높고 공간이 달라질 때마다 작업을 반복해야 한다.
+
+3D Gaussian Splatting(3DGS)은 다중 시점 영상으로부터 사실적인 장면을 재구성하고 새로운 시점을 빠르게 렌더링할 수 있어[1], 실제 공간의 모습과 무선 신호 분포를 결합하는 시각적 기반으로 적합하다. 그러나 3DGS의 반투명 Gaussian 집합은 전파가 어느 표면에 충돌하고 반사되는지를 결정하는 명시적 경계를 제공하지 않으므로, 시각 장면과 전파 계산 장면 사이의 표현 차이를 해소해야 한다. 또한 광선 추적은 공간 기하를 반영할 수 있지만 실제 재질의 유전율과 전도도, 송신 출력, 안테나 특성, 장치별 수신 감도를 정확히 알기 어렵다. 반대로 측정값만 보간하면 실측되지 않은 위치의 벽과 차폐 구조를 반영하기 어렵다. 따라서 공간 구조를 반영한 시뮬레이션과 소수의 실측을 결합하는 방법이 필요하다.
+
+본 연구는 모델 편향의 공간 변화를 평가하기 위해 전역 편향 보정과 공간 잔차 보정을 비교한다. 전역 편향 보정은 보정점 잔차의 평균을 모든 위치에 적용하고, 공간 잔차 보정은 위치별 잔차를 보간한다.
+
+추정 결과를 현장에서 확인할 수 있도록 다중 높이 3차원 RF 볼륨(3D RF Volume), 3D 장면 렌더러와 IMU 기반 핸드헬드 인터페이스도 구현하였다. 이 시각화 계층은 RF 추정 결과를 실제 공간 구조와 함께 탐색하는 데 사용한다.
+
+본 논문의 기여는 다음과 같다.
+
+- 사진 기반 3DGS 장면에서 닫힌 전파 계산용 프록시 장면을 구성하고, 시각 장면·Sionna RT·다중 장치 실측을 하나의 미터 좌표와 시간 정합 데이터 계약으로 연결한다.
+- 링 복도의 10개 위치에서 정·역으로 수집한 20개 반복 관측치로 네 가지 방법을 탐색적으로 비교한다. 잔차 IDW의 MAE는 3.41 dB, 원시 예측은 7.64 dB였으며, 본 장면의 예측값이 Sionna RT의 최대 상호작용 깊이(`max_depth`)에 민감하게 변했다.
+- 추정 결과를 여섯 높이의 3차원 RF 볼륨으로 시각화하고, 영상 출력·IMU 축·텔레포트·높이 순환 인터랙션의 실기기 종단 동작을 확인한다.
+
+본 연구의 정량 결과는 단일 건물에서 수행한 탐색적 평가이며 다른 공간에 대한 일반화를 주장하지 않는다. 2장에서는 관련 연구, 3장에서는 제안 방법, 4장에서는 실험 결과를 다루고 5장에서 결론을 맺는다.
+
+## 2. 관련 연구
+
+### 2.1 3D Gaussian Splatting과 PGSR
+
+3DGS는 다중 시점 영상으로부터 Gaussian 장면을 학습하여 새로운 시점을 빠르게 렌더링한다[1]. 2DGS[3], SuGaR[4]와 PGSR[2]은 Gaussian을 표면에 더 가깝게 정렬하여 기하 복원을 개선한다. 본 연구는 시각화에는 PGSR의 Gaussian을 사용하되, 전파 계산에는 메시의 구멍과 부유 기하를 정리한 닫힌 프록시 장면을 사용한다.
+
+### 2.2 광선 추적 기반 전파 시뮬레이션
+
+Sionna RT는 삼각형 메시와 전파 재질을 이용해 직접파, 반사, 회절과 산란을 포함한 경로 및 전파 지도를 계산한다[5][6]. 본 연구는 재질을 실측으로 학습하지 않고 시뮬레이션과 측정의 차이를 공간적으로 보간한다. 활성화된 전파 현상을 따라갈 수 있는 최대 상호작용 수인 `max_depth`의 민감도는 4.3절에서 별도로 보고한다.
+
+### 2.3 측정 기반 RSSI 공간 추정
+
+RADAR[7] 이후 RSSI 라디오 맵은 실내 측위와 공간 추정에 널리 사용되었고[8][9], IDW[10]와 가우시안 프로세스[11]도 측정값의 공간 보간에 활용되었다. 본 연구는 보정 지점이 네 개뿐인 조건에서 별도 학습이 필요 없는 IDW를 비교 기준으로 사용한다. 잔차 IDW는 측정값 자체가 아니라 시뮬레이션과 측정의 차이만 보간한다.
+
+### 2.4 신경 표현 기반 RF 모델링
+
+NeRF2[14], WiNeRT[15]와 WRF-GS[16]는 신경 표현을 이용해 무선 채널이나 방사장을 학습한다. 이와 달리 본 연구는 환경별 측정 데이터로 신경장을 학습하지 않고, 명시적 기하 기반 예측에 네 지점의 실측 잔차를 결합한다.
+
+### 2.5 3차원 RF 볼륨 시각화와 임베디드 디스플레이
+
+3DGS 뷰어는 학습 장면을 실시간으로 탐색하는 기반을 제공한다[1]. 본 연구의 시스템 기여는 새로운 렌더링 이론이 아니라, 기존 뷰어에 RF 볼륨과 프록시 깊이 가림을 추가하고 IMU·버튼 기반 휴대형 인터페이스까지 하나의 데이터 흐름으로 연결한 구현이다.
+
+## 3. 제안 방법
+
+### 3.1 문제 정의
+
+시각화용 Gaussian 장면, 전파 계산용 표면 장면과 RF 볼륨은 하나의 미터 좌표계에 배치한다. 위치 $x$에서 Sionna RT가 계산한 선형 경로 이득을 $G(x)$, 설정한 송신 전력을 $P_{TX}$ dBm이라 하면 예측 수신 전력은 $\hat{R}_S(x)=P_{TX}+10\log_{10}G(x)$이다. ESP32가 측정한 RSSI를 $R(x)$라 할 때 보정 위치 $x_i$의 잔차는 다음과 같다.
+
+$$
+e_i=R(x_i)-\hat{R}_S(x_i). \qquad (1)
+$$
+
+이 잔차에는 기하·재질 모델의 오차, 실제 안테나와 등방성 안테나 모델의 차이, 장치 편차와 시간에 따른 환경 변화가 함께 포함된다. 본 데이터만으로 각 원인을 분리하지 않으며, 잔차가 위치에 따라 달라지는지만 비교한다.
+
+다섯 장치는 실험 전에 같은 위치에서 측정해 장치별 편차를 계산한다. 고정 채널, RSSI 범위, 오류 플래그, 타임스탬프와 장치·지점 배치 조건을 통과한 표본만 분석하되 원본과 제외 사유는 보존한다. 평가 위치의 측정값은 잔차 보간, IDW 지수, 재질과 송신 전력 선정에는 사용하지 않았다. 다만 평가 위치에서 얻은 한 측정값이 `max_depth` 재검토의 계기가 되었으므로, 4장의 결과는 완전히 독립된 시험 성능이 아니라 탐색적 평가로 해석한다.
+
+### 3.2 전체 파이프라인
+
+[학생: 여섯 단계(장면 구축·계측·전파 계산·측정 보정·비교 평가·3차원 시각화)와 데이터 흐름을 나타내는 전체 아키텍처 그림 작도]
+
+**Fig. 1.** 제안 파이프라인의 전체 구조.
+
+Fig. 1의 파이프라인은 장면 구축, 계측, 전파 계산, 측정 보정, 비교 평가와 3차원 시각화로 구성된다. PGSR 장면과 닫힌 프록시를 같은 미터 좌표에 배치하고, Sionna RT의 예측 수신 전력과 다섯 ESP32의 RSSI를 지점별로 비교한다. 보정 지점의 잔차를 결합한 격자는 3차원 RF 볼륨으로 변환되어 렌더러와 핸드헬드에 표시된다.
+
+### 3.3 PGSR 장면과 프록시 장면 생성
+
+다중 시점 영상으로 COLMAP 카메라 자세와 PGSR 장면을 생성한다. PGSR 메시와 실측 구조를 참고해 바닥, 천장, 벽과 주요 차폐물이 닫힌 표면을 이루도록 프록시를 구성하고, 링 복도의 중앙 코어도 빈 공간으로 유지한다.
+
+[학생: PGSR 표면 메시(좌)와 이로부터 생성한 닫힌 프록시 외피(우) 사진/렌더링 삽입]
+
+**Fig. 2.** PGSR 표면 메시(좌)와 이로부터 생성한 닫힌 프록시 외피(우).
+
+원본 Gaussian, PGSR 메시와 프록시는 별도 계층으로 보존한다. 층고 기준으로 미터 배율과 축을 정한 뒤 변환의 수치적 일관성, 프록시 내부의 송신기·14개 수신기 배치를 검사한다. 정합 수치와 구현 세부는 부록 Table A3에 제시한다.
+
+### 3.4 Sionna RT 지점 및 격자 계산
+
+프록시 장면에는 Sionna 전파 재질을 지정한다. 2.437 GHz에서 가시선, 정반사, 회절과 확산 산란을 활성화하고 벽 투과는 제외한다. `max_depth`는 최대 상호작용 깊이를 뜻하며 4.3절의 민감도 분석에 따라 12로 설정한다.
+
+지점 계산은 보정·평가 위치의 예측 수신 전력을 생성하고, 격자 계산은 측정 높이 평면의 공간 분포를 생성한다. 두 계산은 20 dBm 송신 전력과 $10\log_{10}G$ 변환을 사용한다. 안테나·재질·표본 수와 좌표 검사의 상세 설정은 Table 1과 부록 Table A3에 제시한다.
+
+### 3.5 RSSI 계측과 장치 편차 보정
+
+네 원격 ESP32는 목표 AP의 RSSI를 측정해 ESP-NOW로 게이트웨이에 전달한다[13]. 게이트웨이의 자체 측정값을 포함한 데이터는 STM32와 MQTT 브리지를 거쳐 백엔드에 저장된다[12]. 각 계층은 패킷 오류와 시간 초과를 검사하며, 백엔드는 원시 데이터와 제외 사유를 함께 보존한다. 주기, 패킷과 직렬 통신 설정은 부록 Table A3에 제시한다.
+
+[학생: ESP32 노드에서 분석 입력까지의 계측 경로 다이어그램 작도]
+
+**Fig. 3.** ESP32 노드에서 분석 입력까지의 계측 경로.
+
+수집 경로가 약한 신호를 먼저 제거하지 않도록 유효 RSSI 하한은 모든 계층에서 -110 dBm으로 통일한다.
+
+장치별 편차 보정값은 공통 위치에서 얻은 다섯 장치의 유효 필터링 RSSI 중앙값의 중앙값에서 해당 장치의 중앙값을 뺀 값으로 정의하며, 보정된 측정값은 원 측정값에 이 보정값을 더해 얻는다. 특정 장치 하나가 아니라 전체 중앙값을 기준으로 사용하여 기준 장치의 이상치 영향을 줄인다. 실험 전후의 보정값을 별도로 측정하여 장치 편차의 시간적 변화를 확인한다.
+
+### 3.6 실측값과 시뮬레이션의 결합
+
+보정 위치를 $x_i$라 할 때 IDW 가중치는 식 (2)와 같다. 지수 $p=2$는 평가 전에 고정했고, $\epsilon=10^{-12}$는 0으로 나누는 것을 막는 상수다. 질의 위치가 보정 위치와 일치하면 해당 표본을 직접 사용한다.
+
+$$
+w_i(x)=\frac{1}{\lVert x-x_i\rVert_2^p+\epsilon}. \qquad (2)
+$$
+
+보정 RSSI를 $R_i=R(x_i)$라 할 때 비교하는 네 방법은 다음과 같다. **원시 예측**은 실측 보정 없이 $\hat{R}_S(x)$를 그대로 사용한다. **일반 IDW**는 $R_i$를 식 (2)의 가중치로 평균한다. **잔차 IDW**는 식 (1)의 $e_i$를 보간하여 시뮬레이션 예측에 더한다(식 (3)). **전역 편향 보정**은 같은 잔차의 산술평균을 모든 예측에 더한다(식 (4)).
+
+$$
+\hat{R}_{hybrid}(x)=\hat{R}_S(x)+\frac{\sum_i w_i(x)e_i}{\sum_i w_i(x)}. \qquad (3)
+$$
+
+$$
+\hat{R}_{global}(x)=\hat{R}_S(x)+\frac{1}{N}\sum_{i=1}^{N}e_i. \qquad (4)
+$$
+
+여기서 $N$은 보정 지점 수다.
+
+네 방법은 같은 보정/평가 분할과 좌표를 사용한다. 평가값은 IDW 지수, 재질 또는 송신 출력 선정에 사용하지 않았지만, 3.1절에서 밝힌 것처럼 한 평가값이 `max_depth` 재검토에 사용되었다.
+
+**시간 정합.** 고정 보정 장치의 측정값도 시간에 따라 변하므로, 각 시험 지점의 잔차 e_i는 그 지점의 기록 시간창과 동일한 창에서 관측된 보정값으로 계산한다. 실행 전체 평균을 모든 시험 지점에 공통 적용하지 않으며, 정방향과 역방향은 서로 다른 실행으로 유지한다.
+
+### 3.7 평가지표
+
+시험 위치의 실제값과 예측값 사이의 MAE, RMSE, 평균 오차(ME)와 최대 절대 오차를 계산한다. 추가로 가시선/비가시선 구간별 오차, 방향별 오차, 동일 지점을 두 방향에서 측정한 값의 차이를 보고한다. 마지막 값은 측정 변동 규모와 알고리즘 오차를 비교하기 위한 참고값으로 사용한다.
+
+### 3.8 3차원 RF 볼륨 생성 및 렌더링
+
+비교·보정이 끝난 방법별 예측(원시 예측, 일반 IDW, 잔차 IDW)을 여러 높이의 격자로 다시 계산해 하나의 3차원 RF 볼륨으로 묶는다. 각 높이의 격자는 같은 XY 해상도를 공유하며, 방법별 채널과 함께 유효성 마스크를 저장해 전파 계산이 실패했거나 정의되지 않은 위치를 구분한다.
+
+렌더러는 이 볼륨을 3차원 텍스처로 불러와 광선 행진(ray marching)으로 알파 합성한다. 프록시 메시의 깊이보다 먼 볼륨 샘플을 제거하여 벽 뒤 신호의 표시를 제한한다. 렌더러는 원시 예측, 일반 IDW와 잔차 IDW를 같은 시점에서 전환하는 UI를 제공한다.
+
+실측 잔차는 측정이 이루어진 단일 높이에서만 존재하므로 다른 높이의 잔차 보정값은 수직 외삽값이다. 따라서 RF 볼륨의 수직 변화는 정성적 시각화로 한정하고, 정량 평가는 실측 높이 평면에서만 수행한다.
+
+### 3.9 프레임 스트리밍
+
+렌더러는 800×480 프레임을 압축해 핸드헬드로 전송한다. 중계 서버는 최신 프레임만 유지하며 인코딩과 전송을 렌더링 스레드에서 분리한다. 지원 형식과 헤더 필드는 부록 Table A3에 제시한다.
+
+### 3.10 핸드헬드 자세 추정과 인터랙션
+
+핸드헬드는 IMU 자세를 50 Hz로 백엔드에 보내고, 백엔드는 데이터 유효성을 검사해 렌더러에 전달한다. 렌더러는 접속 시점의 자세를 기준으로 카메라를 회전시키며, 연결이 끊기면 기존 자유 시점 카메라로 복귀한다.
+
+핸드헬드에는 텔레포트와 높이 순환 버튼이 있다. 텔레포트 버튼은 누르는 동안 조준 위치를 표시하고 뗄 때 이동하며, 높이 순환 버튼은 RF 볼륨의 표시 높이를 바꾼다. 장치는 버튼 상태를 전송하고 이동·조준 판정은 렌더러가 수행한다.
+
+## 4. 실험 및 결과
+
+### 4.1 실험 설계와 구현 환경
+
+실험 공간은 중앙 코어를 둘러싼 부산대학교 3층 링 구조 복도로, 넓은 개방 복도와 좁은 복도가 코어를 사이에 두고 마주 보는 구조다. 이 구조는 코어 뒤편에 깊은 비가시선 영역을 만들면서도 링을 따라 우회하는 경로를 동시에 제공하므로 결합 방식의 차이를 드러내기에 적합하다.
+
+보정 지점은 가시선 2개와 비가시선 2개를 섞도록 배치하였다. 보정 집합이 한쪽 구간에만 있으면 반대 구간의 보정이 외삽이 되기 때문이다. 보정 지점과 시험 지점의 최소 거리는 3.53 m로 유지하였다. 실험 조건은 Table 1, 구현 환경은 부록 Table A3, 지점 배치는 Fig. 4와 부록 Table A1에 제시한다.
+
+**Table 1.** 실험 및 전파 계산 조건.
+
+| 항목 | 설정 |
+| --- | --- |
+| 장소 / 좌표계 | 부산대학교 3층 링 복도 / 미터 단위, 오른손 좌표계 |
+| 실제 송신기 | ipTIME N602SR 1대, 2.437 GHz(채널 6), 높이 0.80 m |
+| 수신기 | ESP32 5대, 높이 0.45 m |
+| 시뮬레이션 송신 전력 | 20 dBm |
+| 시뮬레이션 안테나 | 단일 등방성(`iso`) 안테나, 수직 편파(`V`) |
+| 전파 재질 | 콘크리트 프리셋, 산란 계수 0.3(실측값 아님) |
+| 전파 현상 | 가시선·정반사·회절·확산 산란 사용, 벽 투과 제외 |
+| 최대 상호작용 깊이 | `max_depth=12` |
+| 보정 / 시험 지점 | 고정 4개(가시선 2 + 비가시선 2) / 이동 10개(가시선 4 + 비가시선 6) |
+| 측정 순서 | 정방향 test-01→test-10, 역방향 test-10→test-01 (별도 실행) |
+| 지점별 측정 | 안정화 20초 + 기록 120초 |
+| 대표값 | 유효 필터링 RSSI 중앙값 + 실행별 장치 편차 보정값 |
+
+소프트웨어와 시스템 구현 환경은 부록 Table A3에 정리한다.
+
+[학생: 설계도 위 TX, Calibration, Test 좌표 그림 삽입]
+
+**Fig. 4.** 링 복도의 좌표계와 송신기·보정 4지점·시험 10지점 배치.
+
+계측 소프트웨어는 페이로드 구문 분석, 상태 전이, 저장, 장치 편차 보정, 내보내기와 품질 검사에 대한 자동 시험을 통과하였다. STM32 파서의 체크섬 거부, 노드 상태 갱신과 JSON 생성도 호스트 시험으로 확인하였다. 이 시험은 처리 로직만 검증하며 실제 무선 구간의 손실과 현장 운용은 포함하지 않는다.
+
+### 4.2 계측 데이터 품질
+
+수집된 표본은 모두 분석 유효성 조건을 통과했고 RSSI 범위는 설정 하한 -110 dBm에 도달하지 않았다. 이는 형식·채널·시간 조건을 통과했다는 뜻이며 RF 측정 정확도를 보증하지 않는다. AP 채널은 전 표본에서 6으로 일관되었다. 10개 위치에서 얻은 **20개 반복 관측치**(정방향 10 + 역방향 10)를 분석하며, 모든 구간에 같은 시간창의 보정 4대 데이터가 존재한다.
+
+공통 위치에서 계산한 장치 편차 보정값은 -4.0 ~ +1.0 dB 범위였다. 이 보정은 같은 데이터에서 다섯 장치의 중앙값을 공통 중앙값에 맞추도록 정의되므로, 적용 후 중앙값 범위가 5.0 dB에서 0.0 dB가 된 결과는 독립적인 성능 향상이 아니라 보정식의 정상 적용을 확인한 값이다.
+
+고정 보정 장치의 시간 안정성은 지점에 따라 달랐다. cal-01, cal-02, cal-03의 실행 내 변동 범위는 0~3 dB였으나 cal-04는 정방향 실행에서 12 dB 범위로 변동했고 정·역 실행 사이 중앙값도 6 dB 차이를 보였다. 원인은 이번 실험만으로 특정할 수 없으며, 이러한 시간 변동 때문에 3.6절의 동일 시간창 정합을 적용하였다.
+
+### 4.3 광선 추적 파라미터 민감도
+
+최종 평가 위치에서 측정된 -79 ~ -80 dBm 값이 기본 설정(`max_depth=5`)의 -105 dBm대 예측과 약 25 dB 차이를 보여 설정을 재검토하였다. 따라서 `max_depth` 선정과 이후 평가는 완전히 독립적이지 않으며, 아래 결과는 설정 민감도를 확인한 탐색적 분석이다.
+
+최대 상호작용 깊이를 5에서 12로 높이자 비가시선 지점의 예측값이 크게 변했다. 이는 링 복도에서 더 많은 상호작용을 허용할 필요성과 일치하지만, 개별 전파 경로를 분석하지 않았으므로 변화의 물리적 원인을 특정하지 않는다. 다른 조건을 고정한 결과는 Table 2와 같다.
+
+**Table 2.** 최대 상호작용 깊이에 따른 예측 수신 전력 변화.
+
+| 지점 | `max_depth=5` (dBm) | `max_depth=12` (dBm) | 변화 (dB) | 유효 경로 수 (5 → 12) |
+| --- | --- | --- | --- | --- |
+| cal-02 | -106.7 | -96.2 | +10.5 | 1,067 → 197,645 |
+| cal-03 | -105.3 | -97.6 | +7.7 | 1,067 → 195,242 |
+| test-05 | -101.1 | -84.6 | +16.5 | 927 → 190,829 |
+| test-06 | -106.7 | -94.3 | +12.4 | 887 → 180,205 |
+| test-07 | -97.7 | -81.4 | +16.3 | 1,072 → 196,145 |
+| 가시선 6개 | - | - | -1.4 ~ -3.1 | 약 4.1×10^6 |
+
+비가시선 지점은 최대 16.5 dB 상승했고 가시선 지점은 1~3 dB 하락했다. `max_depth` 16과 20의 추가 변화와 광선 표본 수 4×10^6과 8×10^6의 차이가 모두 1 dB 이내여서 본 장면에서는 `max_depth=12`를 사용하였다. 이 1 dB 기준은 수치적 안정성을 판단하기 위한 실험상 기준이다. 벽 투과를 활성화하면 cal-02가 -96.2 dBm에서 -56.9 dBm으로 변했으나, 벽 두께와 투과 손실을 측정하지 않았으므로 해당 조건은 사용하지 않았다.
+
+이 설정 차이는 보정 기법의 평가에도 영향을 준다(Table 3). max_depth = 5 조건에서는 보정 이득이 더 크게 계산되므로, 보정 기법을 비교하기 전에 시뮬레이션 파라미터의 민감도를 확인할 필요가 있다.
+
+**Table 3.** 최대 상호작용 깊이가 탐색적 오차 비교에 미치는 영향.
+
+| Sionna 설정 | 원시 예측 MAE (dB) | 잔차 IDW MAE (dB) | 보정에 의한 개선율 |
+| --- | --- | --- | --- |
+| 초기 설정 `max_depth=5` | 13.45 | 4.51 | 66.5% |
+| 선정 설정 `max_depth=12` | **7.64** | **3.41** | **55.4%** |
+
+Table 3은 평가 위치의 측정값이 설정 재검토에 사용된 뒤 계산한 기술통계이므로 독립 시험 성능으로 해석하지 않는다.
+
+### 4.4 방법별 예측 정확도
+
+10개 위치에서 정·역으로 수집한 20개 반복 관측치의 기술통계는 Table 4와 같다. 잔차 IDW는 이 표본에서 일반 IDW 대비 MAE가 36.0%, RMSE가 33.1% 낮았고 원시 예측 대비로는 각각 55.4%와 49.1% 낮았다. 동일 위치의 두 관측은 독립 표본으로 가정하지 않았으며 유의성 검정이나 일반화 추론은 수행하지 않았다.
+
+**Table 4.** 10개 위치의 20개 반복 관측치에 대한 탐색적 예측 오차.
+
+| 방법 | MAE (dB) | RMSE (dB) | ME (dB) | 최대 절대오차 (dB) |
+| --- | --- | --- | --- | --- |
+| 원시 Sionna RT | 7.64 | 9.32 | +1.54 | 17.29 |
+| 일반 IDW | 5.33 | 7.09 | -2.16 | 18.02 |
+| **Sionna RT + 잔차 IDW** | **3.41** | **4.74** | +1.72 | **11.55** |
+| Sionna RT + 전역 편향 보정 | 8.26 | 9.83 | +2.11 | 17.82 |
+
+지점별 결과는 부록 Table A2에 제시한다. 잔차 보정은 20개 반복 관측치 중 15개에서 원시 예측보다 낮은 오차를 보였다.
+
+[학생: 시험 지점의 실측 RSSI와 예측값 비교 그래프 삽입 — n=20 갱신 반영]
+
+**Fig. 5.** 시험 지점의 실측 RSSI와 예측값 비교.
+
+[학생: 잔차 IDW로 생성한 복도 RF 지도(세 방법 동일 색상 범위) 삽입]
+
+**Fig. 6.** 잔차 IDW로 생성한 복도 RF 지도.
+
+방향별 잔차 IDW MAE는 정방향(n=10) 4.01 dB, 역방향(n=10) 2.78 dB였다. cal-04의 정방향 변동도 함께 관찰되었으나, 두 현상의 인과관계는 별도로 검증하지 않았다.
+
+### 4.5 공간적 예측 편향 분석
+
+Table 4에서 전역 편향 보정의 MAE는 8.26 dB로 원시 예측보다 0.62 dB 높았다. 구간별 편향은 Table 5와 같다.
+
+**Table 5.** 반복 관측치의 구간별 예측 편향과 방법별 MAE.
+
+| 구간 | n | 편향(실측−예측) 평균 (dB) | 원시 예측 | 일반 IDW | 잔차 IDW |
+| --- | --- | --- | --- | --- | --- |
+| 가시선(LoS) | 8 | **-10.1** | 10.03 | 7.84 | **2.41** |
+| 비가시선(NLoS) | 12 | **+3.4** | 6.05 | **3.66** | 4.05 |
+
+예측 편향은 가시선 구간에서 -10.1 dB, 비가시선 구간에서 +3.4 dB로 부호가 달랐다. 따라서 하나의 상수는 이 표본의 두 구간을 동시에 보정하지 못했다. 편향과 예측 수신 전력의 상관계수 -0.87은 반복 관측을 포함한 기술통계이며, 물리적 인과관계나 모집단 상관을 뜻하지 않는다. 이러한 잔차 패턴에는 송신·안테나·재질 모델의 차이와 환경 변동이 함께 포함될 수 있다.
+
+전역 편향 보정은 송신 출력의 상수 조정과 수학적으로 같은 형태이므로, 전역 상수만으로는 이 표본에서 관측된 위치별 잔차를 제거하지 못했다.
+
+잔차 IDW의 개선 폭은 가시선 구간에서 가장 컸다(10.03 → 2.41 dB). 비가시선 구간에서는 일반 IDW가 근소하게 낮은 오차를 보였다. 따라서 잔차 IDW가 모든 구간에서 우월하다고 일반화할 수 없으며, 보정 지점 배치에 따른 추가 평가가 필요하다.
+
+test-07에서 원시 예측의 절대오차는 0.6~2.6 dB였으나 잔차 보정 후 8.6~11.6 dB로 증가하였다. 인접한 cal-02와 cal-03의 양의 잔차가 해당 위치에 보간되었으며, 이는 모든 위치에서 잔차가 매끄럽게 변한다는 가정이 성립하지 않을 가능성을 보여 준다. 이번 실험만으로 해당 현상의 RF 원인은 특정하지 않는다.
+
+### 4.6 반복 측정 차이
+
+동일한 10개 지점을 정·역으로 측정했을 때 두 측정값의 차이는 MAE 3.90 dB, 최대 10.0 dB(test-04)였다. 이 값은 잔차 IDW의 탐색적 MAE 3.41 dB와 비슷하지만, 두 수치만으로 알고리즘 오차와 측정 변동의 비율을 분리할 수는 없다.
+
+### 4.7 시스템 기능 검증
+
+Table 6은 핸드헬드 시각화 시스템의 실기기 검증 결과를 정리한다. 영상 출력, 실제 IMU 장착 축에 따른 카메라 회전, 텔레포트와 높이 순환 버튼의 종단 동작을 확인하였다. 기능별 성공 여부는 확인했으나 반복 횟수와 장시간 성능은 기록하지 않았다.
+
+**Table 6.** 핸드헬드 시각화 시스템의 기능 검증 결과.
+
+| 검증 항목 | 결과 | 검증 범위 |
+| --- | --- | --- |
+| 영상 스트리밍·LCD 출력 | 동작 확인 | Graphics→Relay→ESP32-S3→LCD |
+| IMU 축·카메라 회전 | 동작 확인 | 실제 장착 상태의 자세 입력→렌더러 |
+| 텔레포트 버튼 | 동작 확인 | 조준→버튼 해제→이동 |
+| 높이 순환 버튼 | 동작 확인 | 버튼 입력→RF 볼륨 표시 높이 변경 |
+| 300초 지속 프레임률·지연·손실 | 미측정 | 정량 성능 평가 제외 |
+
+### 4.8 한계 및 논의
+
+본 평가는 단일 층·단일 송신기·2.4 GHz 단일 채널·단일 건물과 네 보정 지점만 다룬다. 또한 평가 위치의 측정값이 `max_depth` 재검토에 사용되었으므로 Table 3~5는 독립 시험 결과가 아닌 탐색적 기술통계다. 다른 공간의 정확도나 방법의 일반적 우월성을 주장하지 않는다.
+
+시각화와 전파 계산에는 각각 Gaussian과 삼각형 메시를 사용하였다. 두 장면을 관리해야 하지만 기존 3DGS 렌더러와 삼각형 기반 전파 계산기를 사용할 수 있으며, 프록시 메시는 볼륨 렌더링의 깊이 가림에도 사용된다.
+
+전파 계산에는 20 dBm, 등방성 수직 편파 안테나와 실측하지 않은 콘크리트 재질값을 사용하였다. 실제 공유기·ESP32 안테나의 방사 패턴, 편파와 설치 방향 및 벽 두께·손실은 측정하지 않았다. 따라서 잔차에서 각 RF 원인을 분리할 수 없으며 ESP32 RSSI는 전문 채널 사운더의 측정을 대체하지 않는다.
+
+장치 편차 보정값, 채널, 지점 배치와 제외 사유는 원본과 함께 보존하였다. 다만 사후 장치 편차는 재보정에 사용하지 않았고 UART 프로토콜에 BSSID가 없어 AP BSSID를 표본 단위로 기록하지 못했다. 동일 시간창 정합의 효과는 실행 전체 평균 조건과 별도로 비교하지 않았다.
+
+잔차 IDW는 잔차의 공간적 평활성을 가정하므로 test-07처럼 원시 예측이 정확한 지점의 오차를 키울 수 있다. 또한 단일 높이에서 얻은 잔차를 다른 높이에 적용한 RF 볼륨은 정성적 시각화이며 수직 방향 정확도 근거가 아니다.
+
+## 5. 결론 및 향후 연구
+
+본 논문에서는 사진 기반 3DGS 장면, Sionna RT와 다중 ESP32 RSSI 측정을 하나의 좌표와 데이터 계약으로 연결하는 시스템을 구현하였다. 부산대학교 3층 링 복도의 10개 위치에서 얻은 20개 반복 관측치로 네 방법을 탐색적으로 비교하고, 결과를 3차원 RF 볼륨과 핸드헬드 인터페이스로 시각화하였다.
+
+이 표본에서 원시 예측, 일반 IDW, 잔차 IDW와 전역 편향 보정의 MAE는 각각 7.64, 5.33, 3.41과 8.26 dB였다. 가시선과 비가시선 관측의 잔차 부호가 달라 전역 상수는 이 표본에 맞지 않았다. 다만 평가 위치의 측정값이 `max_depth` 재검토에 사용되었으므로 이 수치는 독립 시험 성능이나 다른 환경에 대한 우월성 근거가 아니다.
+
+본 장면의 비가시선 예측은 최대 상호작용 깊이에 민감했고 `max_depth=12` 이후의 추가 변화는 1 dB 이내였다. 개별 경로를 분석하지 않았으므로 이러한 변화의 물리적 원인은 특정하지 않았다. 잔차 IDW 오차와 반복 측정 차이가 비슷했지만, 두 값만으로 알고리즘 오차와 측정 변동을 분리할 수는 없다.
+
+추정 결과는 여섯 높이의 3차원 RF 볼륨으로 구성하였다. 영상 출력, IMU 축과 텔레포트·높이 순환 버튼의 종단 동작을 실제 ESP32-S3 핸드헬드에서 확인하였다.
+
+향후 연구에서는 보정 지점의 수와 배치, 깊은 그림자 영역의 비매끄러운 잔차, 날짜·시간대·높이에 따른 환경 변동을 평가한다. 시스템 측면에서는 영상 스트리밍 경로의 300초 이상 지속 프레임률·지연·손실을 정량화한다.
+
+## 부록 A. 세부 실험 데이터
+
+**Table A1.** 송신기 및 측정 지점 배치.
+
+| 역할 | 지점 ID | X (m) | Y (m) | Z (m) | 가시선 | 장치 / 측정 방향 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 송신기 | ap-01 | 21.37 | 17.83 | 0.80 | - | ipTIME N602SR |
+| 보정 | cal-01 | 34.90 | 18.70 | 0.45 | LoS | node-01 |
+| 보정 | cal-02 | 24.02 | 6.31 | 0.45 | NLoS | node-03 |
+| 보정 | cal-03 | 16.07 | 6.31 | 0.45 | NLoS | node-04 |
+| 보정 | cal-04 | 5.86 | 18.56 | 0.45 | LoS | gw-01 |
+| 시험 | test-01 | 12.57 | 17.83 | 0.45 | LoS | 정·역 |
+| 시험 | test-02 | 1.80 | 17.80 | 0.45 | LoS | 정·역 |
+| 시험 | test-03 | 1.76 | 6.90 | 0.45 | NLoS | 정·역 |
+| 시험 | test-04 | 5.17 | 5.31 | 0.45 | NLoS | 정·역 |
+| 시험 | test-05 | 10.90 | 5.31 | 0.45 | NLoS | 정·역 |
+| 시험 | test-06 | 20.04 | 5.31 | 0.45 | NLoS | 정·역 |
+| 시험 | test-07 | 31.57 | 5.31 | 0.45 | NLoS | 정·역 |
+| 시험 | test-08 | 37.93 | 6.90 | 0.45 | NLoS | 정·역 |
+| 시험 | test-09 | 37.93 | 16.88 | 0.45 | LoS | 정·역 |
+| 시험 | test-10 | 30.10 | 17.83 | 0.45 | LoS | 정·역 |
+
+**Table A2.** 시험 지점별 실측 및 예측값.
+
+| 지점 | 방향 | 실측 RSSI (dBm) | 원시 예측 수신 전력 | 원시 오차 | 잔차 IDW 예측 | 잔차 오차 |
+| --- | --- | --- | --- | --- | --- | --- |
+| test-01 | 정 | -41.0 | -37.2 | 3.8 | -37.5 | 3.5 |
+| test-01 | 역 | -44.0 | -37.2 | 6.8 | -41.0 | 3.0 |
+| test-02 | 정 | -49.0 | -42.5 | 6.5 | -50.1 | 1.1 |
+| test-02 | 역 | -52.0 | -42.5 | 9.5 | -53.6 | 1.6 |
+| test-03 | 정 | -66.0 | -68.3 | 2.3 | -69.9 | 3.9 |
+| test-03 | 역 | -69.0 | -68.3 | 0.7 | -67.0 | 2.0 |
+| test-04 | 정 | -78.0 | -70.8 | 7.2 | -67.5 | 10.5 |
+| test-04 | 역 | -68.0 | -70.8 | 2.8 | -65.0 | 3.0 |
+| test-05 | 정 | -77.0 | -84.6 | 7.6 | -72.9 | 4.1 |
+| test-05 | 역 | -72.0 | -84.6 | 12.6 | -71.7 | 0.3 |
+| test-06 | 정 | -80.0 | -94.3 | 14.3 | -80.1 | 0.1 |
+| test-06 | 역 | -77.0 | -94.3 | 17.3 | -78.7 | 1.7 |
+| test-07 | 정 | -82.0 | -81.4 | 0.6 | -73.4 | 8.6 |
+| test-07 | 역 | -84.0 | -81.4 | 2.6 | -72.4 | 11.6 |
+| test-08 | 정 | -70.0 | -69.2 | 0.8 | -70.2 | 0.2 |
+| test-08 | 역 | -73.0 | -69.2 | 3.8 | -70.2 | 2.8 |
+| test-09 | 정 | -54.0 | -42.6 | 11.4 | -60.5 | 6.5 |
+| test-09 | 역 | -59.0 | -42.6 | 16.4 | -58.6 | 0.4 |
+| test-10 | 정 | -49.0 | -37.1 | 11.9 | -50.8 | 1.8 |
+| test-10 | 역 | -51.0 | -37.1 | 13.9 | -49.6 | 1.4 |
+
+**Table A3.** 재현을 위한 좌표, 계산 및 시스템 구현 설정.
+
+| 구분 | 설정 |
+| --- | --- |
+| 장면 정합 | 층고 3.0 m 기준, 1 px = 0.03975 m, 도면-프록시 점유 마스크 IoU 0.741 |
+| 좌표계 | 프록시 점유 격자의 최소 모서리를 원점으로 하는 미터 단위 오른손 좌표계, +Z 위쪽 |
+| 좌표 검사 | 같은 지점 ID의 좌표 차이가 1 µm를 넘으면 분석 중단 |
+| 지점 계산 | 송신원당 8×10^6 표본, 후보 경로 한도 5×10^6, seed 42, 수신기 배치 크기 1 |
+| 격자 계산 | 송신원당 128×10^6 표본, 0.75 m 셀, 최대 4,000셀, seed 43 |
+| RF 볼륨 높이 | 0.25, 0.75, 1.25, 1.75, 2.25, 2.75 m |
+| 계측 주기 | ESP32 RSSI 200 ms, 최근 5개 유효 표본 이동평균, 약 1초 전송 |
+| 계측 전송 | ESP-NOW CRC32 → 115200 bps UART → MQTT JSON → 원시·정규화 데이터 저장 |
+| 소프트웨어 | Python 3.10.20, Sionna RT 1.2.2, Mitsuba 3.8.0, Dr.Jit 1.3.1, RTX 4090 |
+| 장면·백엔드 | COLMAP, PGSR / FastAPI, MQTT, SQLite / ESP-IDF, STM32F107VCT6 |
+| 영상 전송 | 800×480, 팔레트 256색+zlib 기본, RGB332+zlib·JPEG 지원, 형식·시퀀스·타임스탬프·길이 헤더 |
+| 핸드헬드 | ESP32-S3, 480×800 LCD, IMU 자세 50 Hz, 텔레포트·높이 순환 버튼 |
+
+## REFERENCE
+
+[1] B. Kerbl, G. Kopanas, T. Leimkühler, and G. Drettakis, "3D Gaussian Splatting for Real-Time Radiance Field Rendering," *ACM Transactions on Graphics*, Vol. 42, No. 4, 2023.
+[2] D. Chen, H. Li, W. Ye, Y. Wang, W. Xie, S. Zhai, et al., "PGSR: Planar-Based Gaussian Splatting for Efficient and High-Fidelity Surface Reconstruction," *arXiv Preprint*, arXiv:2406.06521, 2024.
+[3] B. Huang, Z. Yu, A. Chen, A. Geiger, and S. Gao, "2D Gaussian Splatting for Geometrically Accurate Radiance Fields," *ACM SIGGRAPH 2024 Conference Papers*, 2024.
+[4] A. Guedon and V. Lepetit, "SuGaR: Surface-Aligned Gaussian Splatting for Efficient 3D Mesh Reconstruction and High-Quality Mesh Rendering," *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition*, pp. 5354-5363, 2024.
+[5] F. Ait Aoudia, J. Hoydis, M. Nimier-David, S. Cammerer, and A. Keller, "Sionna RT: Technical Report," *arXiv Preprint*, arXiv:2504.21719, 2025.
+[6] J. Hoydis, F. Ait Aoudia, S. Cammerer, M. Nimier-David, N. Binder, G. Marcus, et al., "Sionna RT: Differentiable Ray Tracing for Radio Propagation Modeling," *arXiv Preprint*, arXiv:2303.11103, 2023.
+[7] P. Bahl and V. N. Padmanabhan, "RADAR: An In-Building RF-Based User Location and Tracking System," *Proceedings of IEEE INFOCOM*, pp. 775-784, 2000.
+[8] J.-H. Park, J.-G. Lee, and S.-C. Kim, "Performance Improvement Algorithm for Wireless Localization Based on RSSI at Indoor Environment," *The Journal of Korean Institute of Communications and Information Sciences*, Vol. 36, No. 4C, pp. 254-264, 2011.
+[9] H.-M. Noh, Y. Oh, N. Lee, and W. Shin, "A Survey of Deep Learning-Assisted Indoor Localization with Wi-Fi Fingerprinting: Current Status and Research Challenges," *The Journal of Korean Institute of Communications and Information Sciences*, Vol. 46, No. 5, pp. 848-862, 2021, DOI: 10.7840/kics.2021.46.5.848.
+[10] D. Shepard, "A Two-Dimensional Interpolation Function for Irregularly-Spaced Data," *Proceedings of the 23rd ACM National Conference*, pp. 517-524, 1968.
+[11] B. Ferris, D. Hahnel, and D. Fox, "Gaussian Processes for Signal Strength-Based Location Estimation," *Proceedings of Robotics: Science and Systems*, 2006.
+[12] MQTT Specification(2026). https://mqtt.org/mqtt-specification/ (accessed July 28, 2026).
+[13] ESP-NOW SDK: ESP32 API Reference(2026). https://docs.espressif.com/projects/esp-now/en/latest/esp32/api-reference/index.html (accessed July 28, 2026).
+[14] X. Zhao, Z. An, Q. Pan, and L. Yang, "NeRF2: Neural Radio-Frequency Radiance Fields," *Proceedings of the 29th Annual International Conference on Mobile Computing and Networking*, 2023.
+[15] T. Orekondy, P. Kumar, S. Kadambi, H. Ye, J. Soriaga, and A. Behboodi, "WiNeRT: Towards Neural Ray Tracing for Wireless Channel Modelling and Differentiable Simulations," *Proceedings of the International Conference on Learning Representations*, 2023.
+[16] C. Wen, J. Tong, Y. Hu, Z. Lin, and J. Zhang, "WRF-GS: Wireless Radiation Field Reconstruction with 3D Gaussian Splatting," *Proceedings of IEEE INFOCOM*, 2025.
