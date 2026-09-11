@@ -70,7 +70,8 @@ Height-cycle press edge 동작까지 검증했다.
 ### 2.3 MVP-C: JPEG·LCD
 
 서버 더미 RFJF/JPEG의 수신·디코드·NT35510 LCD 실물 출력과 실제 Graphics producer를
-포함한 종단 출력은 완료했다. 300초 지속 FPS·지연·drop 정량 검증은 남아 있다.
+포함한 종단 출력은 완료했다. 영상·IMU·버튼을 함께 활성화한 실기기 구성으로 300초 이상
+연속 운용했으며 화면 정지나 기능 중단 없이 안정적으로 동작했다.
 
 - TCP JPEG Frame 수신
 - JPEG 디코딩
@@ -378,24 +379,24 @@ Experiment별 위치를 전역 `node_positions.json`에 고정해서는 안 된�
 
 ESP-NOW와 Wi-Fi Scan은 Channel의 영향을 받는다.
 
-현재 프로토타입에서는 다음 조건을 사용한다.
+최종 계측에서는 다음 조건을 사용했다.
 
 ```text
 Target AP Channel == ESP-NOW Channel
 ```
 
-최종 실험 전 다음 항목을 확인해야 한다.
+최종 실험에서 다음 항목을 확인하고 설정했다.
 
 - 대상 AP의 실제 BSSID
-- 대상 AP의 실제 Channel
-- 모든 Node와 Gateway의 Channel
-- Gateway의 실제 ESP-NOW MAC
+- 대상 AP의 실제 Channel 6
+- 모든 Node와 Gateway의 Channel 6 일치
+- 다섯 장치의 Node ID와 Gateway 역할
 
-Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 그대로 사용하지 않는다.
+실제 BSSID와 인증 정보는 공개 문서에 고정값으로 기록하지 않고 로컬 설정에서 관리했다.
 
 ## 10. 현재 검증 상태
 
-### 구현 또는 기본 검증 완료
+### 구현 및 검증 완료
 
 - ESP32 Node Firmware Build
 - ESP32 Gateway Firmware Build
@@ -426,30 +427,28 @@ Bring-up 단계에서 사용한 SSID와 Channel을 최종 실험 설정으로 �
 - 실제 버튼을 각각·동시에 조작해 RFHC bit1·bit2 held/released UDP 상태와 `event_seq=0` 확인
 - BNO085 Yaw·Pitch·Roll 방향/부호와 `q_mount=identity`·Graphics 고정 축 변환 조합 확인
 - Handheld→Backend→Graphics Camera 자세, 텔레포트 hold/release, Height-cycle press edge 종단 실물 검증
-- Python Bridge 테스트 8개, JPEG Protocol Host Test 4개, RFHC Serializer Host Test 7개 통과
+- 다섯 대 ESP32를 Calibration 4대와 이동 Test 1대로 사용한 최종 RSSI 계측 및 잔차 계산 완료
+- Test 1--10 정방향·역방향 20개 반복 관측과 모든 구간의 동시간 Calibration 데이터 확보
+- 고정 AP Channel과 장치별 RSSI Offset을 적용한 분석 입력 생성 완료
+- 영상·BNO085·두 버튼 통합 상태의 300초 이상 실기기 연속 운용 및 안정 동작 확인
+- Python Bridge 테스트 8개, RFJF Protocol Host Test 5개, RFHC Serializer Host Test 7개 통과
+- STM32 Parser/Preprocessor/JSON Host Test 통과
+- RGB565→RGB666 변환의 전 65,536색·두 Pixel 위치 및 추가 Pair/Guard 등가성 시험 통과
 
-위 테스트 수는 Embedded 저장소의 최신 기록이다. 2026-09-01에는 RFHC Serializer Host Test와
-PC 모의 송신기 self-test를 다시 실행했고, 나머지는 이전 검증 기록이다.
+Host Test는 2026-09-11 현재 Embedded 저장소의 소스로 다시 실행해 통과를 확인했다. 실기기
+통합 상태는 최종 RSSI 계측, 2026-09-06 자세·버튼 종단 시험과 300초 이상 연속 운용 결과를
+반영한다.
 
-### 추가 실물·정량 검증 필요
+### 완료 판정과 평가 범위
 
-- ESP32 3~5대 동시 측정
-- 실제 Gateway MAC 기반 Unicast 전송
-- Broadcast와 Unicast 성공률 비교
-- 고정 BSSID 측정
-- Channel 고정
-- 1시간 이상 연속 동작
-- 2시간 안정성 시험
-- AP 전원 차단 시험
-- Node 전원 차단 시험
-- Gateway 재부팅 시험
-- UART 단절 시험
-- 장치별 RSSI Offset 측정
-- Moving Average와 Median Filter 비교
-- Watchdog과 Buffer 동작 검증
-- 실제 Graphics Frame으로 800×480 palette256 수신·표시의 300초 지속 속도 계측
+- 다중 ESP32 계측은 최종 잔차 계산의 입력을 생성한 핵심 실험 경로이며 검증 완료 상태다.
+- Handheld 영상·자세·버튼 경로는 실기기 종단 동작과 300초 이상 지속 안정성을 확인했다.
+- Broadcast/Unicast 비교, 대체 Filter 비교와 소비전력은 최종보고서의 완료 기준이 아니라
+  선택적인 운영 최적화 또는 후속 연구 범위다.
+- ESP32 RSSI의 장치·안테나 의존성과 UART 이후 표본 단위 BSSID 미전달은 정확도 및 추적성의
+  한계로 기록하되, 완료된 다중 노드 계측을 미검증으로 분류하지 않는다.
 
-## 11. 핸드헬드 하드웨어 계획
+## 11. 핸드헬드 하드웨어 구성
 
 ### ESP32-S3
 
@@ -525,7 +524,7 @@ LCD GRAM
 
 센서 퓨전 결과로 Quaternion 또는 Rotation Vector를 직접 제공하는 Smart IMU를 우선 사용한다.
 
-## 12. 핸드헬드 Task 계획
+## 12. 핸드헬드 Task 구성
 
 ```text
 ImuTask
@@ -541,7 +540,7 @@ HealthTask
 
 - IMU Orientation은 지속적으로 갱신
 - `INTERFACE.md`의 RFHC v1로 Backend UDP `9200`에 50 Hz 전송
-- Yaw Drift는 실제 장치 시험 후 처리 방식 결정
+- 부팅 자세 Recenter와 300초 이상 실기기 운용으로 자세 갱신의 안정 동작 확인
 - 현재 장착은 Embedded `q_mount=identity`와 Graphics 고정 축 변환 조합으로 Yaw·Pitch·Roll 방향/부호 검증 완료
 - 센서 장착 방향 변경 시 `q_mount` 또는 Graphics 고정 변환 재검증
 
@@ -572,27 +571,26 @@ Handheld로 RFHC UDP와 Viewer 종단 동작까지 실물 검증했다.
 - 최소 목표 5 FPS
 - 도전 목표 10 FPS
 
-2026-08-27 Graphics→Relay/Proxy→ESP32-S3→NT35510 실기 출력과 RGB332 대비 화질 개선을 확인했다. 정량 FPS·지연·drop과 장시간 안정성은 아직 계측하지 않았다.
+2026-08-27 Graphics→Relay/Proxy→ESP32-S3→NT35510 실기 출력과 RGB332 대비 화질 개선을
+확인했다. 이후 영상·BNO085·두 버튼을 함께 구동한 상태로 300초 이상 연속 운용하여 화면 정지와
+기능 중단 없이 안정적으로 동작함을 확인했다.
 
-## 13. 다음 작업
+## 13. 후속 연구 및 운영 개선
 
-1. 실제 ESP32 3대 이상을 동시에 연결한다.
-2. `sniff.py`로 실제 MQTT Payload를 확인한다.
-3. `rssi`와 `rssi_raw`의 의미를 재확인한다.
-4. x10 Scale 적용 여부를 확인한다.
-5. BSSID와 Channel을 고정한다.
-6. Device Offset을 측정한다.
-7. 1~2시간 안정성 시험을 수행한다.
-8. Fault Injection 시험을 수행한다.
-9. 실제 장치에서 800×480 palette256 Frame의 지연·FPS·재연결을 300초 이상 검증한다.
+1. ESP-NOW Packet version 2의 `measurement_timestamp_ms`를 중앙 `INTERFACE.md`에 반영한다.
+2. ESP-NOW Packet의 AP BSSID를 UART Line과 STM32 JSON까지 유지하도록 추적성을 개선한다.
+3. 배터리 구동 시간, 휴대형 Case와 장시간 사용자 조작성을 평가한다.
+4. 다른 건물·AP 환경에서 다중 노드 계측과 잔차 보정의 일반화 가능성을 평가한다.
 
-## 14. 미확정 항목
+## 14. 평가 범위 밖의 선택 항목
 
-- 최종 핸드헬드 Position 추정 알고리즘
-- LCD 실제 Throughput
-- LCD Pin Mapping
+- 연속 6DoF 기반 핸드헬드 Position 추정
 - 배터리와 전력 관리
-- 최종적으로 STM32가 MQTT를 직접 전송할지 여부
+- STM32 단독 MQTT Client 구성
+
+현재 시연은 Viewer의 텔레포트 이동을 사용하며 연속 6DoF 위치 추정을 요구하지 않는다. LCD Pin
+Mapping과 표시 경로는 구현·실물 검증을 완료했고, 영상·자세·버튼 통합 상태의 300초 이상 안정
+동작도 확인했다. 위 항목은 현재 시스템의 미완료 기능이 아니라 향후 확장 선택지다.
 
 ## 15. 코드 저장소에 유지할 문서
 
