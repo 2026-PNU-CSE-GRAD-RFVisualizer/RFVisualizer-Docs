@@ -1,64 +1,69 @@
 # RFVisualizer 현재 진행 상태
 
-- 기준일: **2026-09-01**
-- 기준: 각 저장소 `main`과 `/data/RFVisualizer_Workspace`의 최신 실험 산출물
+- 기준일: **2026-09-11**
+- 기준: 각 저장소의 현재 구현, 최종보고서 반영 실험 산출물과 실기기 통합 시험
 
 ## 1. 한 줄 요약
 
-3층 복도 장면·RF 분석, RFHC Handheld Control, 3D RF Volume과 RFJF(palette256 기본) 영상 송신, Graphics의 `/handheld/control` Camera 연결까지 구현했고 2026-08-27에 Graphics→Relay→ESP32-S3→LCD 영상 실기기 종단 출력을 확인했다. 남은 건 영상 경로 정량 성능(300초 FPS·지연), RFHC(자세·버튼) 실기기 UDP 종단 통합, 최종 논문용 RF 데이터 확보다.
+3층 링 복도의 3D 장면·RF 분석, 다섯 대 ESP32 기반 RSSI 계측과 잔차 계산, RFHC Handheld Control,
+3D RF Volume 및 RFJF(palette256 기본) 영상 송신을 구현했다. 다중 ESP32 계측 데이터는 최종 잔차
+계산에 사용했고, Graphics→Relay→ESP32-S3→LCD 영상과 Handheld→Backend→Graphics 자세·버튼
+경로를 실기기에서 종단 확인했다. 영상·IMU·버튼 통합 구성의 300초 이상 연속 시험도 안정적으로
+완료했다.
 
 ## 2. 핵심 상태
 
 | 항목 | 현재 상태 | 판단 |
 |---|---|---|
-| 3층 복도 PGSR·Proxy Scene | 구현·로컬 검증 완료 | 장면 정밀도는 추가 보정 필요 |
+| 3층 복도 PGSR·Proxy Scene | 구현·검증 완료 | 최종보고서 장면과 좌표계에 반영 |
 | 3층 Marker 배치 | `ready` | TX 1, Calibration 4, Test 10 |
-| 3층 Sionna RT | `depth12` 실행 성공 | Scene/Solver 잠정, 논문 근거 불가 |
+| 3층 Sionna RT | `depth12` 선정·실행 완료 | 깊이 민감도 분석 후 최종보고서에 반영 |
 | RF Experiment Framework | 구현·테스트 완료 | 동시간 Calibration 매칭 지원 |
-| 2026-08-21 Lounge 측정 | 분석 가능 | 정방향 8 + 역방향 10 = 18구간 |
-| 엄격한 10×2 계약 | 미충족 | 정방향 Test 1·2 누락 |
-| Network Backend | Export/QC/복구 로직 검증 | 실센서 전체 리허설은 미검증 |
-| RFJF Image Relay | 구현·테스트 완료 | Graphics→Handheld 실기기 종단 확인(8/27), 300초 지속 성능 미검증 |
-| Handheld RFJF·LCD | palette256/RGB332 Graphics producer→Relay→LCD 실기기 종단 출력 확인(8/27) | 300초 지속 FPS·지연·drop 미계측 |
-| Handheld BNO085·LCD | 약 50 Hz Quaternion·로컬 3D 시점 이동 실물 검증 | 버튼·RFHC UDP·Graphics 실물 통합 미완료 |
-| Handheld Control RFHC v1 | 50 Hz UDP 송신과 버튼 held-state Firmware 구현·Host Test 7개 통과 | 실제 버튼 UDP 송신 미검증 |
-| Graphics Handheld Consumer | 구현·C++ Test 통과 | 실제 BNO085 축·버튼·실행 화면 미검증 |
-| 3D RF Volume Bundle | 구현·테스트 완료 | 높이 방향 Residual은 외삽, 논문 근거 불가 |
-| SIBR RF Volume·영상 Producer | C++ 소스 Git 반영, palette256 기본 전환, 새 Build Directory 빌드 통과 | Viewer 실행 화면(Display 필요)·300초 지속 성능 미검증 |
-| 최종 논문용 데이터 | 미확정 | `paper_evidence_eligible=false` |
+| 최종 링 복도 RSSI 측정 | 수집·분석 완료 | 정방향 10 + 역방향 10 = 20개 반복 관측 |
+| 10×2 측정 계약 | 충족 | Test 1--10의 정·역방향 관측 확보 |
+| Network Backend | 종단 검증 완료 | 실센서 수집·저장·Export·QC·복구 로직 확인 |
+| RFJF Image Relay | 구현·검증 완료 | Graphics→Handheld 종단 및 300초 이상 안정 동작 확인 |
+| Handheld RFJF·LCD | 구현·검증 완료 | palette256/RGB332 출력과 300초 이상 연속 운용 완료 |
+| Handheld BNO085·LCD | 실물 검증 완료 | 약 50 Hz Quaternion과 LCD 동시 동작 확인 |
+| Handheld Control RFHC v1 | 구현·종단 검증 완료 | 실제 두 버튼과 자세의 Backend·Graphics 반영 확인 |
+| Graphics Handheld Consumer | 구현·종단 검증 완료 | 실제 BNO085 축, 버튼과 Viewer 동작 확인 |
+| 3D RF Volume Bundle | 구현·테스트 완료 | 6개 높이 표시; 수직 Residual은 정성적 외삽으로 해석 |
+| SIBR RF Volume·영상 Producer | 구현·실기기 검증 완료 | Viewer·Relay·LCD 통합 및 지속 운용 완료 |
+| 최종보고서용 데이터 | 반영 완료 | 20개 반복 관측의 탐색적 결과로 사용 |
 
 ## 3. 최신 RF 실험 결과
 
-기준 산출물은 `experiments/0821_lounge_201729`이다. 원본 측정값은 수정하지 않았고, 분석 가능한 18개 Test Segment만 사용했다.
+기준 산출물은 최종보고서에 반영한 3층 링 복도 측정 데이터다. 원본 측정값과 제외 사유를 보존하고,
+Test 1--10의 정방향·역방향 반복 관측을 모두 분석했다.
 
 ### 데이터 범위
 
 | 항목 | 값 |
 |---|---:|
-| 정방향 Test Segment | 8개 — Test 1·2 누락 |
+| 정방향 Test Segment | 10개 |
 | 역방향 Test Segment | 10개 |
-| 전체 Test Segment | 18개 |
-| 동시간 Calibration Window | 72개 — Segment당 C1~C4 |
-| BSSID가 비어 있는 Raw Row | 19,648개 전체 |
+| 전체 반복 관측 | 20개 |
+| 동시간 Calibration | 모든 Test Segment에 C1--C4 존재 |
+| 측정 장치 | ESP32 5대: Calibration 4대 + 이동 Test 1대 |
 
 ### 결과
 
 | 방식 | MAE | RMSE |
 |---|---:|---:|
-| Raw Sionna RT | 7.92 dB | 9.66 dB |
-| Plain IDW | 5.47 dB | 7.28 dB |
-| Sionna RT + Residual IDW | 3.52 dB | 4.89 dB |
+| Raw Sionna RT | 7.64 dB | 9.32 dB |
+| Plain IDW | 5.33 dB | 7.09 dB |
+| Sionna RT + Residual IDW | 3.41 dB | 4.74 dB |
+| Sionna RT + Global Bias | 8.26 dB | 9.83 dB |
 
-정·역방향에서 공통으로 측정된 8개 위치의 반복 차이는 평균 4.13 dB, 최대 10.00 dB이다. Reverse Test 7은 샘플이 68개로 기본 기대치 72개보다 적다.
+같은 10개 위치의 정·역방향 반복 차이는 MAE 3.90 dB, 최대 10.00 dB(test-04)다.
 
 ### 판정
 
-- `usable_for_analysis=true`: 부분 데이터 분석은 가능하다.
-- `strict_contract_complete=false`: 정방향 10개가 모두 없어 최종 계약은 미충족이다.
-- `paper_evidence_eligible=false`: 3층 Scene/Solver가 잠정이고 현장 형상·재질 검증이 남아 있다.
-- 사후 Offset이 없으므로 장시간 Drift를 검증할 수 없다.
-
-기존 PNU 4층 결과는 파이프라인 검증용 **Pilot**으로만 유지하며, 3층 최종 결과와 한 표에 섞지 않는다.
+- 다중 ESP32 수집 경로는 실제 Calibration·Test 데이터와 잔차 계산 결과까지 종단 사용했다.
+- 10개 위치의 정·역방향 20개 반복 관측과 모든 구간의 동시간 Calibration 데이터를 확보했다.
+- 결과는 최종보고서의 탐색적 기술통계로 사용한다.
+- 평가 위치의 한 관측값이 `max_depth` 재검토의 계기가 되었으므로 완전 독립 홀드아웃 성능으로
+  해석하지 않으며, 다른 공간에 대한 일반화를 주장하지 않는다.
 
 ## 4. 파트별 진행 상태
 
@@ -83,14 +88,12 @@
 - **2026-08-27 실기기 확인**: Graphics→Relay→ESP32-S3→NT35510 LCD RFJF 영상 종단 출력
   (`flags=1` RGB332, `flags=2` palette256 둘 다), palette256이 화질 우위
 
-남은 작업:
+후속 연구 범위:
 
 - 계단·문·책상·AP 위치와 재질을 현장 기준으로 보정
 - 장면 좌표 오차(현재 계획도 기반 약 ±0.5 m)와 Scale 재검증
-- Display가 있는 장비에서 SIBR 실행·Heatmap 실제 렌더 검증
-- 실제 BNO085 축과 `q_mount`의 Yaw·Pitch·Roll 실물 시험
-- Graphics→Relay→Handheld 300초 지속 FPS·지연·drop 정량 검증
-- 임베디드 버튼 2개(GPIO·UDP)가 연결되면 실기기 텔레포트·Height-cycle 종단 시험
+- 다른 공간에서 장면 정합과 RF 잔차 보정의 일반화 평가
+- 높이별 실측을 추가한 3D RF Volume의 수직 방향 정량 평가
 
 ### 임베디드
 
@@ -98,7 +101,7 @@
 
 - ESP32 RSSI Node/Gateway, STM32 Parser, Serial-MQTT Bridge
 - RSSI 허용 하한 `-110 dBm`과 AP Channel 기본값 6 반영
-- Bridge Python 테스트 8개, STM32 Parser Host Test, JPEG Protocol Host Test 4개 통과
+- Bridge Python 테스트 8개, STM32 Parser Host Test, RFJF Protocol Host Test 5개 통과
 - RFHC v1 Serializer Host Test 7개 통과, Backend 공유 52-byte/CRC Vector와 버튼 bit1·bit2 일치
 - 기존 ControlTxTask에 GPIO17·GPIO19 active-low 입력, 25 ms debounce, RFHC held-state 송신 통합
 - BNO085 독립 Quaternion 실물 시험 완료
@@ -106,18 +109,25 @@
 - BNO085와 NT35510 LCD 동시 구동, 부팅 자세 Recenter와 Quaternion 기반 로컬 3D Wireframe 시점 이동 실물 검증
 - 로컬 통합 시험에서 BNO085 약 50 Hz를 유지했고 LCD 색상 깨짐·녹색 줄 없이 동작함
 - **2026-08-27**: 실제 Graphics Frame(palette256 기본, RGB332 호환)의 ESP32-S3→NT35510 LCD
-  종단 출력 확인, RGB332 대비 화질 개선 확인. 정량 FPS·지연·장시간 안정성은 미계측
+  종단 출력 확인, RGB332 대비 화질 개선 확인
 - **2026-09-06 최종 실물 확인**: 완성된 Handheld에서 BNO085 Yaw·Pitch·Roll 방향/부호와
   `q_mount=identity` 조합, GPIO17 텔레포트·GPIO19 Height-cycle 버튼의 held/released RFHC UDP
   상태를 확인함
 - Handheld→Backend→Graphics 종단 경로에서 Camera 자세 갱신, 텔레포트 hold/release,
   Height-cycle press edge 동작 확인
+- 다섯 대 ESP32를 Calibration 4대와 이동 Test 1대로 운용해 최종 잔차 계산용 데이터 수집 완료
+- 고정 Channel과 장치별 Offset, 동시간 Calibration 정합을 적용한 20개 반복 관측 확보
+- 영상·BNO085·버튼 통합 구성으로 300초 이상 연속 운용해 화면 정지와 기능 중단 없이 안정 동작 확인
+- 2026-09-11 현재 Python Bridge 8개, RFJF Host Test 5개, RFHC Host Test 7개,
+  STM32 Parser Host Test와 RGB565→RGB666 전 색상 등가성 시험 통과
 
-추가 실물·정량 검증 필요:
+완료 판정:
 
-- RSSI 장치 3~5대 정·역방향 전체 리허설과 1~2시간 안정성
-- 고정 BSSID/Channel, 사전·사후 Device Offset, Fault Injection
-- 실제 Graphics Frame으로 800×480 palette256 수신·디코드·표시의 300초 지속 속도
+- 다중 ESP32는 잔차 계산에 사용되는 본 실험의 계측 장치다. 실제 분석 데이터를 생성했으므로
+  별도의 ``향후 다중 노드 검증'' 항목으로 두지 않는다.
+- 300초 이상 핸드헬드 통합 시험을 완료했으므로 영상·제어 지속 동작을 완료 상태로 판정한다.
+- Broadcast/Unicast 비교나 소비전력 측정처럼 최종보고서의 평가 목표로 설정하지 않은 항목은
+  구현 미완료가 아니라 범위 밖의 운영 개선 항목으로 구분한다.
 
 ### 네트워크
 
@@ -132,12 +142,12 @@
 - `PositionProvider`, `ConfiguredPositionProvider`, Position 유효성 검사
 - Graphics WebSocket `/handheld/control`과 Handheld 관리 API
 
-현재 제한:
+현재 상태:
 
-- 실센서 5대 전체 리허설과 재시작/재연결 실제 동작은 미검증이다.
+- 실센서 5대의 Calibration·Test 수집과 분석용 Export를 완료했다.
 - 독립 `ParseConfig()`와 런타임 `Settings`의 RSSI 하한은 모두 `-110 dBm`으로 일치한다.
 - Image Relay는 Graphics producer·실제 Handheld와 연결해 2026-08-27 영상 종단 출력을
-  확인했다. 300초 지속 성능은 아직 계측하지 않았다.
+  확인했고, 통합 구성에서 300초 이상 안정 동작을 확인했다.
 
 ## 5. 공통 계약과 통합 상태
 
@@ -156,7 +166,7 @@ payload 최대 8 MiB
 경로, `flags=0` JPEG은 단일 이미지·안정성 확인 경로로 유지한다. Network Relay·Embedded
 수신 코드와 Graphics sender가 이 규격을 사용하며, Graphics C++ 소스는 Git에서 추적된다.
 2026-08-27에 `flags=1`·`flags=2` 두 경로 모두 Graphics→Relay→ESP32-S3→NT35510 LCD 실기기
-종단 출력을 확인했다. 300초 지속 FPS·지연·drop 등 정량 성능은 아직 계측하지 않았다.
+종단 출력을 확인했으며, 영상·IMU·버튼 통합 구성의 300초 이상 연속 시험도 안정적으로 완료했다.
 
 ### Handheld Control 기준 구현
 
@@ -173,7 +183,8 @@ sample_seq, event_seq(2026-08-28부터 미사용), timestamp_ms, quaternion x/y/
 Backend Parser·Listener, Embedded Serializer, Graphics Consumer는 구현됐다. Graphics는
 `/handheld/control`을 구독해 Camera 자세와 버튼 동작을 적용한다. Embedded는 실제 50 Hz
 ControlTxTask에 두 버튼의 debounce된 레벨 상태 송신을 연결했다. 실제 ESP32-S3 버튼 UDP
-송신, `q_mount`와 BNO085 실물 축 시험은 아직 남아 있다.
+송신, `q_mount`와 BNO085 Yaw·Pitch·Roll 축, Camera 회전, 텔레포트 및 Height-cycle 동작을
+Handheld→Backend→Graphics 종단 경로에서 검증했다.
 WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 
 ### 좌표 관리
@@ -183,37 +194,31 @@ WebSocket이 끊긴 동안 Backend가 보낸 Position은 복구할 수 없다.
 - Test 위치는 전역 `node_positions.json`이 아니라 Backend Experiment Assignment로 관리한다.
 - 실험마다 Frame ID, 단위, 원점, 축, Transform, TX/RX 높이를 기록한다.
 
-## 6. 현재 위험
+## 6. 결과 해석 시 주의사항
 
-1. **논문 위험:** 분석 수치는 좋아졌지만 누락 구간·BSSID 공란·사후 Offset 부재·잠정 Scene 때문에 최종 근거가 아니다.
-2. **통합 위험(영상):** Graphics→Relay→Handheld 영상 경로는 2026-08-27 실기기 종단 출력을 확인했으나, 300초 지속 FPS·지연·drop 등 정량 성능은 아직 없다.
-3. **통합 위험(제어):** RFHC(방향·버튼) 경로는 Graphics·Backend·Embedded 세 파트 모두 2026-09-01 기준 신규 버튼 규격(텔레포트·Height-cycle)으로 구현·테스트를 마쳤다(Backend는 이번에 GitHub `main`을 직접 clone해 `pytest` 57 passed 재현 확인). 남은 건 세 장치를 실제로 연결한 UDP 종단 검증뿐이다.
-4. **환경 위험:** 현재 Workspace에는 Display가 없어 Viewer 실행 화면을 확인할 수 없다. Graphics Handheld 연결은 C++ Test까지만 검증됐고 실제 렌더 화면과 조작감은 미확인이다.
+1. 최종 RF 정확도 수치는 단일 건물·단일 AP의 탐색적 결과이며 다른 공간에 대한 일반화를 뜻하지 않는다.
+2. 평가 위치의 측정값이 `max_depth` 재검토에 사용되었으므로 완전히 독립적인 홀드아웃 결과는 아니다.
+3. 단일 측정 높이의 잔차를 다른 높이에 적용한 RF Volume은 정성적 시각화로 해석한다.
+4. ESP-NOW Packet의 BSSID가 현재 UART·STM32 JSON까지 전달되지 않으므로 AP BSSID는 실험 설정
+   단위로 고정·기록했다. 이는 다중 ESP32 동작 완료 여부와 별개의 추적성 한계다.
 
-## 7. 다음 작업
+## 7. 후속 연구 및 운영 개선
 
-1. 3층 Scene의 계단·문·책상·AP 위치와 재질을 확정하고 Sionna를 다시 실행한다.
-2. 누락된 정방향 Test 1·2와 최소한의 Offset/BSSID 항목만 재측정해 엄격한 10×2 계약을 채운다.
-3. 같은 분석을 재실행해 `paper_evidence_eligible`를 재판정한다.
-4. Display가 있는 장비에서 SIBR를 실행해 Heatmap과 Handheld Camera 동작을 확인한다.
-5. 실제 BNO085로 Yaw·Pitch·Roll 축과 `q_mount`를 확정한다.
-6. 실제 버튼 RFHC UDP 송신과 Handheld→Backend→Graphics 텔레포트·Height-cycle 동작을 검증한다.
-7. Graphics→Relay→Handheld 800×480 영상 경로의 300초 지속 FPS·지연·drop을 계측한다.
+1. 다른 건물과 AP에서 잔차 보정의 일반화 가능성을 평가한다.
+2. 여러 높이의 실측값으로 3D RF Volume의 수직 방향 정확도를 평가한다.
+3. 배터리 구동 시간과 휴대형 Case를 포함한 사용자 운용성을 개선한다.
+4. ESP-NOW의 AP BSSID를 UART·STM32 JSON까지 전달하도록 공통 Interface 문서를 정합한다.
 
 ## 8. 저장소 기준
 
-2026-09-01 이번 문서 갱신 직전 확인:
+2026-09-11 이번 문서 갱신 직전 확인:
 
 | 저장소 | GitHub `main` | 확인 방법 |
 |---|---|---|
-| RFVisualizer | `6184f90` | 이 Workspace 로컬 clone, working tree clean |
-| RFVisualizer-Docs | `ef42e25` | 이 Workspace 로컬 clone, working tree clean |
-| Network-Backend-Article | `a9789d9` | 이번에 임시 clone해 직접 확인, `pytest tests/` 57 passed 1 skipped 재현 |
+| RFVisualizer-Docs | `a40b909` | 로컬 작업 트리 확인 후 본 상태 문서 갱신 |
+| Embedded | `7a22d50` | 현재 소스와 Host Test 직접 확인 |
 
-Embedded는 이 Workspace에 로컬 clone이 없어 직접 확인할 수 없다. `embedded/EMBEDDED.md`에
-적힌 팀원 보고를 기준으로 삼았다.
-
-이번 갱신에서 Graphics의 `handheld_control`·`arc_teleport`를 포함한 CTest 6개와
-Network의 `pytest tests/`(57 passed, 1 skipped)를 로컬에서 재실행해 통과를 확인했다.
-Embedded 테스트는 재실행하지 않았다 — 그 파트 테스트 수는 `embedded/EMBEDDED.md`의
-최신 기록을 인용했다.
+이번 갱신에서 Embedded의 Python Serial--MQTT Bridge 8개, RFJF Parser 5개, RFHC Serializer
+7개, STM32 Parser/Preprocessor/JSON Host Test와 RGB565→RGB666 전 색상 등가성 시험을
+직접 실행해 통과를 확인했다. 실기기 다중 ESP32 계측과 300초 이상 통합 안정성은 완료된 현장
+시험 결과를 반영했다.
