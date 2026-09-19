@@ -1,0 +1,53 @@
+\contentsline {section}{\numberline {1}서론}{1}{section.1}%
+\contentsline {subsection}{\numberline {1.1}연구 배경}{1}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}기존 문제점}{1}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}연구 목표}{1}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}과제 추진 경과와 보고서 구성}{2}{subsection.1.4}%
+\contentsline {section}{\numberline {2}연구 배경}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}3D Gaussian Splatting과 표면 복원}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}광선 추적 기반 전파 시뮬레이션}{2}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}측정 기반 RSSI 추정과 신경 RF 모델링}{2}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}3차원 RF 시각화와 현장 인터페이스}{3}{subsection.2.4}%
+\contentsline {section}{\numberline {3}요구조건 및 설계 변경 내역}{3}{section.3}%
+\contentsline {subsection}{\numberline {3.1}착수, 중간, 최종 단계의 요구조건 변경}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}현실적 제약과 대응 결과}{4}{subsection.3.2}%
+\contentsline {section}{\numberline {4}연구 내용}{5}{section.4}%
+\contentsline {subsection}{\numberline {4.1}문제 정의}{5}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}전체 파이프라인}{5}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}PGSR 장면과 프록시 장면 생성}{6}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Sionna RT 전파 계산}{6}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}RSSI 계측 경로}{7}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}장치 구성과 데이터 수집 경로}{7}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}RSSI 취득과 패킷 검사}{7}{subsubsection.4.5.2}%
+\contentsline {subsubsection}{\numberline {4.5.3}장치 편차 보정과 시간 기준}{8}{subsubsection.4.5.3}%
+\contentsline {subsection}{\numberline {4.6}백엔드 수집 및 저장, 실시간 중계}{8}{subsection.4.6}%
+\contentsline {subsubsection}{\numberline {4.6.1}중앙 수집과 데이터 검증}{8}{subsubsection.4.6.1}%
+\contentsline {subsubsection}{\numberline {4.6.2}저장과 실험 관리}{8}{subsubsection.4.6.2}%
+\contentsline {subsubsection}{\numberline {4.6.3}품질 검사와 내보내기}{9}{subsubsection.4.6.3}%
+\contentsline {subsubsection}{\numberline {4.6.4}실시간 제어와 영상 중계}{9}{subsubsection.4.6.4}%
+\contentsline {subsection}{\numberline {4.7}실측값과 시뮬레이션의 결합}{10}{subsection.4.7}%
+\contentsline {subsection}{\numberline {4.8}3차원 RF 볼륨과 시각화}{11}{subsection.4.8}%
+\contentsline {subsection}{\numberline {4.9}핸드헬드 인터페이스와 영상 전송}{11}{subsection.4.9}%
+\contentsline {subsubsection}{\numberline {4.9.1}단말 하드웨어와 역할 분담}{11}{subsubsection.4.9.1}%
+\contentsline {subsubsection}{\numberline {4.9.2}영상 프레임 수신과 JPEG 처리}{12}{subsubsection.4.9.2}%
+\contentsline {subsubsection}{\numberline {4.9.3}프레임 버퍼와 LCD DMA 출력}{12}{subsubsection.4.9.3}%
+\contentsline {subsubsection}{\numberline {4.9.4}IMU 자세와 버튼 상태 전달}{13}{subsubsection.4.9.4}%
+\contentsline {section}{\numberline {5}실험 및 결과}{14}{section.5}%
+\contentsline {subsection}{\numberline {5.1}중간 단계 파일럿 검증}{14}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}강의실 장면과 전파 계산 연결}{14}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}수집 경로와 백엔드 부하}{14}{subsubsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.2}실험 설계}{15}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}평가 지표}{16}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}방법별 예측 정확도}{16}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}공간적 예측 편향 분석}{16}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}시스템 기능 검증}{18}{subsection.5.6}%
+\contentsline {subsection}{\numberline {5.7}계측 데이터 품질과 연속 운용}{19}{subsection.5.7}%
+\contentsline {section}{\numberline {6}산학협력 멘토 의견 반영}{20}{section.6}%
+\contentsline {section}{\numberline {7}결론 및 향후 연구 방향}{21}{section.7}%
+\contentsline {subsection}{\numberline {7.1}연구 결과 요약}{21}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}한계 및 향후 연구}{21}{subsection.7.2}%
+\contentsline {section}{\numberline {8}구성원별 역할 및 개발 일정}{22}{section.8}%
+\contentsline {subsection}{\numberline {8.1}구성원별 역할}{22}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}계획 대비 추진 실적}{22}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}월별 추진 타임라인}{23}{subsection.8.3}%
+\contentsline {section}{\numberline {9}참고 문헌}{25}{section.9}%
